@@ -68,14 +68,24 @@ jobs:
             -ldflags="-w -s -X github.com/pocket-id/pocket-id/backend/internal/common.Version=$(cat ../.version)" \
             -o ../dist/local-agent/pocket-id ./cmd
 
+      - name: Freeze OAuth bootstrap with its Python runtime
+        run: |
+          set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/pocket-bootstrap-venv"
+          "$RUNNER_TEMP/pocket-bootstrap-venv/bin/python" -m pip install --disable-pip-version-check --no-input 'pyinstaller==6.16.0'
+          "$RUNNER_TEMP/pocket-bootstrap-venv/bin/pyinstaller" --noconfirm --clean --onefile --name bootstrap \
+            --distpath dist/local-agent --workpath "$RUNNER_TEMP/pyinstaller-work" \
+            --specpath "$RUNNER_TEMP" scripts/local-agent/bootstrap.py
+          test -x dist/local-agent/bootstrap
+
       - name: Assemble self-starting localhost test bundle
         run: |
           set -euo pipefail
-          cp scripts/local-agent/{start.sh,stop.sh,bootstrap.py,README.txt} dist/local-agent/
+          cp scripts/local-agent/{start.sh,stop.sh,README.txt} dist/local-agent/
           cp LICENSE dist/local-agent/LICENSE.pocket-id
           chmod 700 dist/local-agent/pocket-id
-          chmod 700 dist/local-agent/start.sh dist/local-agent/stop.sh dist/local-agent/bootstrap.py
-          python3 -m py_compile dist/local-agent/bootstrap.py
+          chmod 700 dist/local-agent/start.sh dist/local-agent/stop.sh dist/local-agent/bootstrap
+          python3 -m py_compile scripts/local-agent/bootstrap.py
           bash -n dist/local-agent/start.sh dist/local-agent/stop.sh
           openssl rand -hex 32 > dist/local-agent/shared-admin-key.txt
           chmod 600 dist/local-agent/shared-admin-key.txt
