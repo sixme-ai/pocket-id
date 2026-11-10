@@ -3,13 +3,14 @@
 import base64
 import json
 import os
+import sys
 from pathlib import Path
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(sys.executable if getattr(sys, "frozen", False) else __file__).resolve().parent
 BASE = "http://localhost:1411"
 STATE = ROOT / ".local-oauth.json"
 RESOURCE = os.environ.get("LOCAL_MCP_RESOURCE", "http://localhost:8080/mcp")
