@@ -133,6 +133,13 @@ jobs:
           test ! -e "$location/shared-admin-key.txt"
           test "$(stat -c '%a' "$location/.env")" = 600
           grep -Eq '^STATIC_API_KEY=[0-9a-f]{64}$' "$location/.env"
+          grep -Fxq 'ACTORS_HOST=127.0.0.1' "$location/.env"
+          grep -Fxq 'ACTORS_PORT=1414' "$location/.env"
+          grep -Fq 'bind=127.0.0.1:1414' "$location/logs/pocket-id.log"
+          if grep -Fq 'bind=0.0.0.0:1414' "$location/logs/pocket-id.log"; then
+            echo 'Actor transport unexpectedly exposed on all interfaces: FAIL'
+            exit 1
+          fi
           test -s "$location/.login-link.txt"
           test -s "$location/.local-oauth.json"
           POCKET_ID_INSTALL_DIR="$location" timeout 60s "$installer" > "$RUNNER_TEMP/second-start.log" 2>&1
