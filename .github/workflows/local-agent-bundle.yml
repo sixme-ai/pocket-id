@@ -1,0 +1,137 @@
+name: Pocket ID Local Agent Bundle
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - .github/workflows/local-agent-bundle.yml
+      - scripts/local-agent/**
+      - backend/**
+      - frontend/**
+      - .node-version
+      - .version
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pocket-id-local-agent-bundle
+  cancel-in-progress: true
+
+jobs:
+  linux-amd64:
+    name: Build, real smoke test and package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout Pocket ID Git sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Node and Vite+
+        uses: voidzero-dev/setup-vp@cab1ab9eaff52d4857875f4f2c016e36af8f2c76 # v1.22.0
+        with:
+          node-version-file: .node-version
+          cache: true
+          run-install: false
+
+      - name: Install Go toolchain
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Download all frontend dependencies
+        run: vp install --frozen-lockfile
+
+      - name: Build embedded frontend
+        run: |
+          vp -C frontend run build
+          test -s backend/frontend/dist/index.html
+
+      - name: Compile and test real Go backend
+        working-directory: backend
+        env:
+          GOMAXPROCS: "2"
+          CGO_ENABLED: "0"
+        run: |
+          go mod download
+          go test -p=2 -tags=exclude_frontend,unit ./internal/apikey ./internal/usersignup ./internal/api ./internal/oidc
+          mkdir -p ../dist/local-agent
+          go build -p=2 -trimpath \
+            -ldflags="-w -s -X github.com/pocket-id/pocket-id/backend/internal/common.Version=$(cat ../.version)" \
+            -o ../dist/local-agent/pocket-id ./cmd
+
+      - name: Assemble self-starting localhost test bundle
+        run: |
+          set -euo pipefail
+          cp scripts/local-agent/{start.sh,stop.sh,bootstrap.py,README.txt} dist/local-agent/
+          cp LICENSE dist/local-agent/LICENSE.pocket-id
+          chmod 700 dist/local-agent/pocket-id
+          chmod 700 dist/local-agent/start.sh dist/local-agent/stop.sh dist/local-agent/bootstrap.py
+          python3 -m py_compile dist/local-agent/bootstrap.py
+          bash -n dist/local-agent/start.sh dist/local-agent/stop.sh
+          openssl rand -hex 32 > dist/local-agent/shared-admin-key.txt
+          chmod 600 dist/local-agent/shared-admin-key.txt
+
+      - name: Test first boot and idempotent re-run against real Pocket ID
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd dist/local-agent
+          trap './stop.sh >/dev/null 2>&1 || true' EXIT
+          timeout 150s ./start.sh > first-start.log 2>&1 || {
+            echo "First startup failed"
+            sed -E 's@/lc/[A-Za-z0-9_-]+@/lc/REDACTED@g' first-start.log | tail -60
+            tail -60 logs/pocket-id.log 2>/dev/null || true
+            exit 1
+          }
+          grep -Fq 'OIDC/JWKS, local human setup, M2M OAuth and wrong-secret denial: PASS' first-start.log
+          test -s .login-link.txt
+          test -s .local-oauth.json
+          timeout 60s ./start.sh > second-start.log 2>&1
+          grep -Fq 'Initial human administrator already exists' second-start.log
+          python3 - <<'PY'
+          import json
+          import urllib.error
+          import urllib.request
+          from pathlib import Path
+          auth = json.loads(Path(".local-oauth.json").read_text())
+          assert auth["human_client_id"] and auth["m2m_client_id"]
+          assert auth["m2m_client_secret"] and auth["human_granted"]
+          opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+          with opener.open("http://localhost:1411/", timeout=5) as reply:
+              assert reply.status == 200
+              assert b"html" in reply.read(8192).lower()
+          try:
+              opener.open("http://localhost:1411/api/signup/setup", timeout=5)
+          except urllib.error.HTTPError as err:
+              assert err.code == 404, f"Unexpected setup status {err.code}"
+          else:
+              raise AssertionError("Initial admin setup remained available")
+          print("REAL RUNTIME PASS: embedded UI, first admin, idempotence, OAuth and negative")
+          PY
+
+      - name: Create downloadable release-like ZIP
+        run: |
+          set -euo pipefail
+          rm -rf dist/local-agent/__pycache__ dist/local-agent/logs dist/local-agent/data
+          rm -f dist/local-agent/.env dist/local-agent/.pocket-id.pid
+          rm -f dist/local-agent/.local-oauth.json dist/local-agent/.login-link.txt
+          rm -f dist/local-agent/first-start.log dist/local-agent/second-start.log
+          (cd dist && zip -q -r pocket-id-local-agent-linux-amd64.zip local-agent)
+          sha256sum dist/pocket-id-local-agent-linux-amd64.zip | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish binary plus automatic setup as GitHub Actions artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: pocket-id-local-agent-linux-amd64
+          path: dist/pocket-id-local-agent-linux-amd64.zip
+          if-no-files-found: error
+          retention-days: 14
