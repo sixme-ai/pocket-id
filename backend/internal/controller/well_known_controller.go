@@ -114,7 +114,7 @@ func (wkc *WellKnownController) computeServerMetadata() ([]byte, error) {
 		"subject_types_supported":                        []string{"public"},
 		"id_token_signing_alg_values_supported":          []string{alg.String()},
 		"authorization_response_iss_parameter_supported": true,
-		"code_challenge_methods_supported":               []string{"plain", "S256"},
+		"code_challenge_methods_supported":               []string{"S256"},
 		"request_parameter_supported":                    true,
 		"request_uri_parameter_supported":                false,
 		"request_object_signing_alg_values_supported":    []string{"none"},
