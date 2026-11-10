@@ -6,13 +6,14 @@ fail() { printf 'Pocket ID local ERROR: %s\n' "$*" >&2; exit 1; }
 [[ "$(uname -s)" == Linux && "$(uname -m)" == x86_64 ]] || fail 'This package needs Linux x86_64'
 [[ -x bootstrap ]] || fail 'Bundled bootstrap executable missing'
 [[ -x pocket-id ]] || fail 'pocket-id executable missing'
-[[ -f shared-admin-key.txt && ! -L shared-admin-key.txt ]] || fail 'shared test API key missing'
+[[ ! -e shared-admin-key.txt && ! -L shared-admin-key.txt ]] || fail 'Unsafe shared admin key file: extract a fresh bundle'
 mkdir -p data logs
 chmod 700 data logs
+[[ ! -L .env ]] || fail 'Refusing a symlink at .env'
 if [[ ! -f .env ]]; then
   key="$(od -An -N32 -tx1 /dev/urandom | tr -d ' \n')"
-  api_key="$(tr -d '\r\n' < shared-admin-key.txt)"
-  [[ "$api_key" =~ ^[0-9a-f]{64}$ ]] || fail 'Invalid shared test API key'
+  api_key="$(od -An -N32 -tx1 /dev/urandom | tr -d ' \n')"
+  [[ "$api_key" =~ ^[0-9a-f]{64}$ ]] || fail 'Could not generate local test API key'
   ( set -C; cat > .env <<EOF
 APP_URL=http://localhost:1411
 INTERNAL_APP_URL=http://localhost:1411
@@ -48,5 +49,5 @@ fi
 ./pocket-id one-time-access-token agent-tester | tee .login-link.txt
 chmod 600 .login-link.txt
 printf '\nPocket ID ready on http://localhost:1411 (PID %s)\n' "$pid"
-printf 'Local admin test API key: shared-admin-key.txt (same for everyone downloading this build)\n'
+printf 'Local admin test API key: STATIC_API_KEY in private .env (unique to this installation)\n'
 printf 'OAuth test clients: .local-oauth.json | Login code: .login-link.txt\n'

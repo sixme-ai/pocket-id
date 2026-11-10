@@ -93,8 +93,8 @@ jobs:
           chmod 700 dist/local-agent/start.sh dist/local-agent/stop.sh dist/local-agent/bootstrap
           python3 -m py_compile scripts/local-agent/bootstrap.py
           bash -n dist/local-agent/start.sh dist/local-agent/stop.sh
-          openssl rand -hex 32 > dist/local-agent/shared-admin-key.txt
-          chmod 600 dist/local-agent/shared-admin-key.txt
+          test ! -e dist/local-agent/shared-admin-key.txt
+          test ! -e dist/local-agent/.env
 
       - name: Test first boot and idempotent re-run against real Pocket ID
         shell: bash
@@ -109,6 +109,51 @@ jobs:
             exit 1
           }
           grep -Fq 'OIDC/JWKS, local human setup, M2M OAuth and wrong-secret denial: PASS' first-start.log
+          test ! -e shared-admin-key.txt
+          test "$(stat -c '%a' .env)" = 600
+          grep -Eq '^STATIC_API_KEY=[0-9a-f]{64}
+          test -s .local-oauth.json
+          timeout 60s ./start.sh > second-start.log 2>&1
+          grep -Fq 'Initial human administrator already exists' second-start.log
+          python3 - <<'PY'
+          import json
+          import urllib.error
+          import urllib.request
+          from pathlib import Path
+          auth = json.loads(Path(".local-oauth.json").read_text())
+          assert auth["human_client_id"] and auth["m2m_client_id"]
+          assert auth["m2m_client_secret"] and auth["human_granted"]
+          opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+          with opener.open("http://localhost:1411/", timeout=5) as reply:
+              assert reply.status == 200
+              assert b"html" in reply.read(8192).lower()
+          try:
+              opener.open("http://localhost:1411/api/signup/setup", timeout=5)
+          except urllib.error.HTTPError as err:
+              assert err.code == 404, f"Unexpected setup status {err.code}"
+          else:
+              raise AssertionError("Initial admin setup remained available")
+          print("REAL RUNTIME PASS: embedded UI, first admin, idempotence, OAuth and negative")
+          PY
+
+      - name: Create downloadable release-like ZIP
+        run: |
+          set -euo pipefail
+          rm -rf dist/local-agent/__pycache__ dist/local-agent/logs dist/local-agent/data
+          rm -f dist/local-agent/.env dist/local-agent/.pocket-id.pid
+          rm -f dist/local-agent/.local-oauth.json dist/local-agent/.login-link.txt
+          rm -f dist/local-agent/first-start.log dist/local-agent/second-start.log
+          (cd dist && zip -q -r pocket-id-local-agent-linux-amd64.zip local-agent)
+          sha256sum dist/pocket-id-local-agent-linux-amd64.zip | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish binary plus automatic setup as GitHub Actions artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: pocket-id-local-agent-linux-amd64
+          path: dist/pocket-id-local-agent-linux-amd64.zip
+          if-no-files-found: error
+          retention-days: 14
+ .env
           test -s .login-link.txt
           test -s .local-oauth.json
           timeout 60s ./start.sh > second-start.log 2>&1

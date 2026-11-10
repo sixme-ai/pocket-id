@@ -6,10 +6,10 @@ Pocket ID Local Agent Test Bundle (Linux x86_64 only)
    a public OAuth PKCE client, an M2M OAuth client and mcp:access resource grants.
 4. ./start.sh prints a real single-use login link for the human test admin,
    fresh on each start. The same link is also in .login-link.txt (mode 0600).
-5. Pocket ID is PASSKEY-ONLY: the shared test admin API key in shared-admin-key.txt
-   is not a human password. For human login, use the printed one-time login code.
-6. The identical shared test API key is bundled for all agents that download
-   the same GitHub Actions artifact; NEVER expose this local instance to the internet.
+5. Pocket ID is PASSKEY-ONLY: a local admin API key is generated on first start
+   in private .env (mode 0600). It is NOT a human password; use the one-time code.
+6. Every installation generates its own key. No API key is bundled in the ZIP.
+   NEVER expose this local test instance to the internet.
 7. For M2M OAuth client ID, secret and resource, inspect .local-oauth.json
    (mode 0600). The human PKCE client ID is there as well.
 8. The service listens only on 127.0.0.1:1411 and uses private local SQLite.
