@@ -1,0 +1,133 @@
+package utils
+
+import (
+	"crypto/rand"
+	"errors"
+	"fmt"
+	"io"
+	"net/url"
+	"regexp"
+	"strings"
+	"unicode"
+)
+
+// GenerateRandomAlphanumericString generates a random alphanumeric string of the given length
+func GenerateRandomAlphanumericString(length int) (string, error) {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	return GenerateRandomString(length, charset)
+}
+
+// GenerateRandomUnambiguousString generates a random string of the given length using unambiguous characters
+func GenerateRandomUnambiguousString(length int) (string, error) {
+	const charset = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ0123456789"
+	return GenerateRandomString(length, charset)
+}
+
+// GenerateRandomUppercaseUnambiguousString generates a random uppercase string of the given length using unambiguous characters
+func GenerateRandomUppercaseUnambiguousString(length int) (string, error) {
+	const charset = "ABCDEFGHJKMNPQRSTUVWXYZ0123456789"
+	return GenerateRandomString(length, charset)
+}
+
+// NormalizeUnambiguousString converts commonly confused letters to the canonical digits used by generated codes
+func NormalizeUnambiguousString(value string) string {
+	return strings.NewReplacer("I", "1", "i", "1", "O", "0", "o", "0").Replace(value)
+}
+
+// GenerateRandomString generates a random string of the given length using the provided character set
+func GenerateRandomString(length int, charset string) (string, error) {
+
+	if length <= 0 {
+		return "", errors.New("length must be a positive integer")
+	}
+
+	if len(charset) == 0 {
+		return "", errors.New("character set must not be empty")
+	}
+
+	// The algorithm below is adapted from https://stackoverflow.com/a/35615565
+	const (
+		letterIdxBits = 6                    // 6 bits to represent a letter index
+		letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
+	)
+
+	result := strings.Builder{}
+	result.Grow(length)
+	// Because we discard a bunch of bytes, we read more in the buffer to minimize the changes of performing additional IO
+	bufferSize := int(float64(length) * 1.3)
+	randomBytes := make([]byte, bufferSize)
+	for i, j := 0, 0; i < length; j++ {
+		// Fill the buffer if needed
+		if j%bufferSize == 0 {
+			_, err := io.ReadFull(rand.Reader, randomBytes)
+			if err != nil {
+				return "", fmt.Errorf("failed to generate random bytes: %w", err)
+			}
+		}
+
+		// Discard bytes that are outside of the range
+		// This allows making sure that we maintain uniform distribution
+		idx := int(randomBytes[j%bufferSize] & letterIdxMask)
+		if idx < len(charset) {
+			result.WriteByte(charset[idx])
+			i++
+		}
+	}
+
+	return result.String(), nil
+}
+
+func GetHostnameFromURL(rawURL string) string {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return ""
+	}
+	return parsedURL.Hostname()
+}
+
+func CapitalizeFirstLetter(str string) string {
+	if str == "" {
+		return ""
+	}
+
+	result := strings.Builder{}
+	result.Grow(len(str))
+	for i, r := range str {
+		if i == 0 {
+			result.WriteRune(unicode.ToUpper(r))
+		} else {
+			result.WriteRune(r)
+		}
+	}
+	return result.String()
+}
+
+var (
+	reAcronymBoundary = regexp.MustCompile(`([A-Z]+)([A-Z][a-z])`) // ABCd -> AB_Cd
+	reLowerToUpper    = regexp.MustCompile(`([a-z0-9])([A-Z])`)    // aB -> a_B
+)
+
+func CamelCaseToSnakeCase(s string) string {
+	s = reAcronymBoundary.ReplaceAllString(s, "${1}_${2}")
+	s = reLowerToUpper.ReplaceAllString(s, "${1}_${2}")
+	return strings.ToLower(s)
+}
+
+func CamelCaseToScreamingSnakeCase(s string) string {
+	s = reAcronymBoundary.ReplaceAllString(s, "${1}_${2}")
+	s = reLowerToUpper.ReplaceAllString(s, "${1}_${2}")
+	return strings.ToUpper(s)
+}
+
+// GetFirstCharacter returns the first non-whitespace character of the string, correctly handling Unicode
+func GetFirstCharacter(str string) string {
+	for _, c := range str {
+		if unicode.IsSpace(c) {
+			continue
+		}
+		return string(c)
+	}
+
+	// Empty string case
+	return ""
+}

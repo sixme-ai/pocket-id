@@ -1,0 +1,164 @@
+import type { ListRequestOptions, Paginated } from '#lib/types/list-request.type.ts';
+import type {
+	AccessibleOidcClient,
+	AuthorizedOidcClient,
+	CompleteInteractionResponse,
+	InteractionSession,
+	InteractionStep,
+	OidcClient,
+	OidcClientCreate,
+	OidcClientCreated,
+	OidcClientLogoPreset,
+	OidcClientSecret,
+	OidcClientSecretCreated,
+	OidcClientUpdate,
+	OidcClientWithAllowedGroups,
+	OidcClientWithAllowedUserGroups,
+	OidcDeviceCodeInfo
+} from '#lib/types/oidc.type.ts';
+import type { ScimServiceProvider } from '#lib/types/scim.type.ts';
+import { cachedOidcClientLogo } from '#lib/utils/cached-image-util.ts';
+import { encodeClientIdParam } from '#lib/utils/client-id-util.ts';
+import APIService from './api-service';
+
+class OidcService extends APIService {
+	getAuthorizeInteraction = async (id: string) => {
+		const { data } = await this.api.get<InteractionSession>(`/oidc/interactions/${id}`);
+		return data;
+	};
+
+	completeAuthorizeInteractionStep = async (
+		id: string,
+		step: InteractionStep,
+		scopes?: string[]
+	) => {
+		const { data } = await this.api.post<CompleteInteractionResponse>(
+			`/oidc/interactions/${id}/complete`,
+			{ step, scopes }
+		);
+		return data;
+	};
+
+	listClients = async (options?: ListRequestOptions) => {
+		const res = await this.api.get('/oidc/clients', {
+			params: options
+		});
+		return res.data as Paginated<OidcClientWithAllowedGroups>;
+	};
+
+	createClient = async (client: OidcClientCreate) =>
+		(await this.api.post('/oidc/clients', client)).data as OidcClientCreated;
+
+	removeClient = async (id: string) => {
+		await this.api.delete(`/oidc/clients/${encodeClientIdParam(id)}`);
+	};
+
+	getClient = async (id: string) =>
+		(await this.api.get(`/oidc/clients/${encodeClientIdParam(id)}`))
+			.data as OidcClientWithAllowedUserGroups;
+
+	updateClient = async (id: string, client: OidcClientUpdate) =>
+		(await this.api.put(`/oidc/clients/${encodeClientIdParam(id)}`, client)).data as OidcClient;
+
+	refreshClient = async (id: string) =>
+		(await this.api.post(`/oidc/clients/${encodeClientIdParam(id)}/refresh`))
+			.data as OidcClientWithAllowedUserGroups;
+
+	updateClientLogo = async (client: OidcClient, image: File | null, light: boolean = true) => {
+		const hasLogo = light ? client.hasLogo : client.hasDarkLogo;
+
+		if (hasLogo && !image) {
+			await this.removeClientLogo(client.id, light);
+			return;
+		}
+		if (!hasLogo && !image) {
+			return;
+		}
+
+		const formData = new FormData();
+		formData.append('file', image!);
+
+		await this.api.post(`/oidc/clients/${encodeClientIdParam(client.id)}/logo`, formData, {
+			params: { light }
+		});
+		cachedOidcClientLogo.bustCache(client.id);
+	};
+
+	removeClientLogo = async (id: string, light: boolean = true) => {
+		await this.api.delete(`/oidc/clients/${encodeClientIdParam(id)}/logo`, {
+			params: { light }
+		});
+		cachedOidcClientLogo.bustCache(id);
+	};
+
+	searchLogoPresets = async (search: string) => {
+		const { data } = await this.api.get<OidcClientLogoPreset[]>('/oidc/logo-presets', {
+			params: { search }
+		});
+		return data;
+	};
+
+	listClientSecrets = async (id: string) =>
+		(await this.api.get(`/oidc/clients/${encodeClientIdParam(id)}/secrets`))
+			.data as OidcClientSecret[];
+
+	createClientSecret = async (id: string, expiresAt: Date | null) =>
+		(
+			await this.api.post(`/oidc/clients/${encodeClientIdParam(id)}/secrets`, {
+				expiresAt: expiresAt?.toISOString() ?? null
+			})
+		).data as OidcClientSecretCreated;
+
+	deleteClientSecret = async (id: string, secretId: string) => {
+		await this.api.delete(`/oidc/clients/${encodeClientIdParam(id)}/secrets/${secretId}`);
+	};
+
+	updateAllowedUserGroups = async (id: string, userGroupIds: string[]) => {
+		const res = await this.api.put(`/oidc/clients/${encodeClientIdParam(id)}/allowed-user-groups`, {
+			userGroupIds
+		});
+		return res.data as OidcClientWithAllowedUserGroups;
+	};
+
+	verifyDeviceCode = async (userCode: string, scopes?: string[]) => {
+		return await this.api.post(`/oidc/device/verify?code=${userCode}`, { scopes });
+	};
+
+	getDeviceCodeInfo = async (userCode: string): Promise<OidcDeviceCodeInfo> => {
+		const response = await this.api.get(`/oidc/device/info?code=${userCode}`);
+		return response.data;
+	};
+
+	getClientPreview = async (id: string, userId: string, scopes: string) => {
+		const response = await this.api.get(
+			`/oidc/clients/${encodeClientIdParam(id)}/preview/${userId}`,
+			{
+				params: { scopes }
+			}
+		);
+		return response.data;
+	};
+
+	listOwnAccessibleClients = async (options?: ListRequestOptions) => {
+		const res = await this.api.get('/oidc/users/me/clients', { params: options });
+		return res.data as Paginated<AccessibleOidcClient>;
+	};
+
+	listOwnAuthorizedClients = async (options?: ListRequestOptions) => {
+		const res = await this.api.get('/oidc/users/me/authorized-clients', { params: options });
+		return res.data as Paginated<AuthorizedOidcClient>;
+	};
+
+	revokeOwnAuthorizedClient = async (clientId: string) => {
+		await this.api.delete(`/oidc/users/me/authorized-clients/${encodeClientIdParam(clientId)}`);
+	};
+
+	getScimResourceProvider = async (clientId: string) => {
+		const res = await this.api.get(
+			`/oidc/clients/${encodeClientIdParam(clientId)}/scim-service-provider`
+		);
+		return res.data as ScimServiceProvider;
+	};
+}
+
+export default OidcService;

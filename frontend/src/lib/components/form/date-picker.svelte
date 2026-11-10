@@ -1,0 +1,93 @@
+<script lang="ts">
+	import { Calendar } from '#lib/components/ui/calendar/index.ts';
+	import * as Popover from '#lib/components/ui/popover/index.ts';
+	import { m } from '#lib/paraglide/messages.js';
+	import { getLocale } from '#lib/paraglide/runtime.js';
+	import { cn } from '#lib/utils/style.ts';
+	import {
+		CalendarDate,
+		DateFormatter,
+		getLocalTimeZone,
+		type DateValue
+	} from '@internationalized/date';
+	import CalendarIcon from '@lucide/svelte/icons/calendar';
+	import type { HTMLAttributes } from 'svelte/elements';
+
+	type Props = {
+		value?: Date;
+		id?: string;
+	} & HTMLAttributes<HTMLDivElement>;
+
+	let { value = $bindable(undefined), id, ...restProps }: Props = $props();
+
+	let calendarDisplayDate: CalendarDate | undefined = $state(
+		value ? dateToCalendarDate(value) : undefined
+	);
+
+	let open = $state(false);
+
+	function dateToCalendarDate(d: Date): CalendarDate {
+		return new CalendarDate(d.getFullYear(), d.getMonth() + 1, d.getDate());
+	}
+
+	$effect(() => {
+		if (value) {
+			const newInternalCalendarDate = dateToCalendarDate(value);
+			if (!calendarDisplayDate || calendarDisplayDate.compare(newInternalCalendarDate) !== 0) {
+				calendarDisplayDate = newInternalCalendarDate;
+			}
+		} else {
+			if (calendarDisplayDate !== undefined) {
+				calendarDisplayDate = undefined;
+			}
+		}
+	});
+
+	function handleCalendarInteraction(newDateValue?: DateValue) {
+		open = false;
+		calendarDisplayDate = newDateValue as CalendarDate | undefined;
+		if (calendarDisplayDate) {
+			const newExternalDate = calendarDisplayDate.toDate(getLocalTimeZone());
+			if (!value || value.getTime() !== newExternalDate.getTime()) {
+				value = newExternalDate;
+			}
+		} else {
+			if (value !== undefined) {
+				value = undefined;
+			}
+		}
+	}
+
+	const df = new DateFormatter(getLocale(), {
+		dateStyle: 'long'
+	});
+</script>
+
+<div class="w-full" {...restProps}>
+	<Popover.Root bind:open>
+		<Popover.Trigger {id} class="w-full">
+			{#snippet child({ props })}
+				<button
+					{...props}
+					class={cn(
+						'bg-input/50 flex h-9 w-full items-center justify-start rounded-full p-3 font-normal',
+						!value && 'text-muted-foreground'
+					)}
+					aria-label={m.select_a_date()}
+				>
+					<CalendarIcon class="mr-2 size-4" />
+					{calendarDisplayDate
+						? df.format(calendarDisplayDate.toDate(getLocalTimeZone()))
+						: m.select_a_date()}
+				</button>
+			{/snippet}
+		</Popover.Trigger>
+		<Popover.Content class="w-auto p-0" align="start">
+			<Calendar
+				type="single"
+				bind:value={() => calendarDisplayDate, (newValue) => handleCalendarInteraction(newValue)}
+				initialFocus
+			/>
+		</Popover.Content>
+	</Popover.Root>
+</div>

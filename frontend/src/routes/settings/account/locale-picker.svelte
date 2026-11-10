@@ -1,0 +1,58 @@
+<script lang="ts">
+	import * as Select from '#lib/components/ui/select/index.ts';
+	import { getLocale, type Locale } from '#lib/paraglide/runtime.js';
+	import UserService from '#lib/services/user-service.ts';
+	import userStore from '#lib/stores/user-store.ts';
+	import { setLocale } from '#lib/utils/locale.util.ts';
+
+	const userService = new UserService();
+	const currentLocale = getLocale();
+
+	const locales = {
+		ca: 'Català',
+		cs: 'Čeština',
+		da: 'Dansk',
+		de: 'Deutsch',
+		en: 'English',
+		es: 'Español',
+		et: 'Eesti',
+		fi: 'Suomi',
+		fr: 'Français',
+		hu: 'Magyar',
+		it: 'Italiano',
+		ja: '日本語',
+		ko: '한국어',
+		lv: 'Latviešu',
+		nl: 'Nederlands',
+		no: 'Norsk',
+		pl: 'Polski',
+		pt: 'Português',
+		'pt-BR': 'Português brasileiro',
+		ru: 'Русский',
+		sv: 'Svenska',
+		tr: 'Türkçe',
+		uk: 'Українська',
+		vi: 'Tiếng Việt',
+		'zh-CN': '简体中文',
+		'zh-TW': '繁體中文（臺灣）'
+	};
+
+	async function updateLocale(locale: Locale) {
+		await userService.updateCurrent({
+			...$userStore!,
+			locale
+		});
+		await setLocale(locale);
+	}
+</script>
+
+<Select.Root type="single" value={currentLocale} onValueChange={(v) => updateLocale(v as Locale)}>
+	<Select.Trigger class="max-w-[200px]" aria-label="Select locale">
+		{locales[currentLocale]}
+	</Select.Trigger>
+	<Select.Content class="max-h-100">
+		{#each Object.entries(locales) as [value, label] (value)}
+			<Select.Item {value}>{label}</Select.Item>
+		{/each}
+	</Select.Content>
+</Select.Root>

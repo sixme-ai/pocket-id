@@ -1,0 +1,228 @@
+package oidc
+
+import (
+	"context"
+	"errors"
+	"log/slog"
+	"net/http"
+	"net/url"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/pocket-id/fosite"
+	"github.com/pocket-id/pocket-id/backend/internal/apperror"
+	"github.com/pocket-id/pocket-id/backend/internal/authz"
+	"github.com/pocket-id/pocket-id/backend/internal/httpserver"
+	"github.com/pocket-id/pocket-id/backend/internal/utils"
+	"github.com/pocket-id/pocket-id/backend/internal/utils/cookie"
+)
+
+const parRequestURIPrefix = "urn:ietf:params:oauth:request_uri:"
+
+type authorizationHandler struct {
+	provider             fosite.OAuth2Provider
+	authorizationService *authorizationService
+}
+
+func newAuthorizationHandler(
+	provider fosite.OAuth2Provider,
+	authorizationService *authorizationService,
+) *authorizationHandler {
+	return &authorizationHandler{
+		provider:             provider,
+		authorizationService: authorizationService,
+	}
+}
+
+func (h *authorizationHandler) authorize(c *gin.Context) {
+	ctx := c.Request.Context()
+	principal := authz.PrincipalFrom(c)
+	reauthenticationToken, _ := c.Cookie(cookie.ReauthenticationTokenCookieName)
+
+	// A request that resumes an interaction only carries the interaction ID; the original
+	// parameters are restored from the stored session so they never travel through the
+	// front channel.
+	interactionID := c.Query("interaction")
+	if interactionID != "" {
+		query, err := h.authorizationService.interactionRequestQuery(ctx, interactionID)
+		if err != nil {
+			slog.WarnContext(ctx, "Failed to restore authorize request from interaction session", "error", err.Error())
+			h.writeAuthorizeError(ctx, c, fosite.NewAuthorizeRequest(), err)
+			return
+		}
+		c.Request.URL.RawQuery = query.Encode()
+	}
+
+	// Match Fosite's form parsing so the PAR check uses the same request_uri even when query and body values conflict
+	err := c.Request.ParseMultipartForm(1 << 20)
+	if err != nil && !errors.Is(err, http.ErrNotMultipart) {
+		h.writeAuthorizeError(ctx, c, fosite.NewAuthorizeRequest(), fosite.ErrInvalidRequest.WithHint("Unable to parse HTTP body, make sure to send a properly formatted form request body.").WithWrap(err))
+		return
+	}
+
+	// Capture the PAR URI before Fosite merges request object parameters and validates the referenced PAR session
+	hasPushedAuthorizationRequest := strings.HasPrefix(c.Request.Form.Get("request_uri"), parRequestURIPrefix)
+
+	ar, err := h.provider.NewAuthorizeRequest(ctx, c.Request)
+	if err != nil {
+		slog.ErrorContext(ctx, "Failed to create authorize request", "error", err.Error())
+		h.writeAuthorizeError(ctx, c, ar, err)
+		return
+	}
+
+	authorization, err := h.authorizationService.authorize(ctx, authorizeInput{
+		userID:                        principal.UserID,
+		authenticationMethod:          principal.AuthenticationMethod,
+		authenticationTime:            principal.AuthenticationTime,
+		requester:                     ar,
+		hasPushedAuthorizationRequest: hasPushedAuthorizationRequest,
+		reauthenticationToken:         reauthenticationToken,
+		interactionID:                 interactionID,
+		requestParams:                 authorizeRequestParams(ar),
+		meta:                          requestMetaFromGin(c),
+	})
+	if err != nil {
+		slog.ErrorContext(ctx, "Failed to authorize request", "error", err.Error())
+		h.writeAuthorizeError(ctx, c, ar, err)
+		return
+	}
+
+	if authorization.RequiresInteraction {
+		c.Redirect(http.StatusFound, "/interaction?interaction="+authorization.InteractionID)
+		return
+	}
+
+	response, err := h.provider.NewAuthorizeResponse(ctx, ar, authorization.Session)
+	if err != nil {
+		slog.ErrorContext(ctx, "Failed to create authorize response", "error", err.Error())
+		h.writeAuthorizeError(ctx, c, ar, err)
+		return
+	}
+
+	// fosite renders an auto-submitting HTML page for response_mode=form_post, which needs a relaxed CSP
+	h.relaxCSPForFormPost(c, ar)
+
+	h.provider.WriteAuthorizeResponse(ctx, c.Writer, ar, response)
+}
+
+func (h *authorizationHandler) getInteractionSession(c *gin.Context) {
+	interactionID := c.Param("id")
+
+	interactionSession, err := h.authorizationService.getInteractionSession(c.Request.Context(), interactionID)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, interactionSession)
+}
+
+func (h *authorizationHandler) completeInteraction(c *gin.Context) {
+	interactionID := c.Param("id")
+	principal := authz.PrincipalFrom(c)
+
+	var request completeInteractionRequest
+	if err := httpserver.BindJSON(c, &request); err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	reauthenticationToken, _ := c.Cookie(cookie.ReauthenticationTokenCookieName)
+	response, err := h.authorizationService.completeInteractionStep(c.Request.Context(), interactionID, principal.UserID, request.Step, request.Scopes, reauthenticationToken, principal.AuthenticationTime, requestMetaFromGin(c))
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// redirectAuthorizationErrors shows the errors of the authorization middleware, such as a disabled account or an unverified email, on the interaction error page
+// The middleware refuses these requests before the authorize handler runs, so its error is still unwritten when the chain returns here
+func (h *authorizationHandler) redirectAuthorizationErrors(c *gin.Context) {
+	c.Next()
+
+	if len(c.Errors) == 0 || c.Writer.Written() {
+		return
+	}
+	h.redirectToInteractionError(c, c.Errors.Last().Err)
+}
+
+func (h *authorizationHandler) writeAuthorizeError(ctx context.Context, c *gin.Context, ar fosite.AuthorizeRequester, err error) {
+	if rfcErr, ok := errors.AsType[*fosite.RFC6749Error](err); ok {
+		attrs := []slog.Attr{
+			slog.String("error", rfcErr.ErrorField),
+			slog.String("description", rfcErr.DescriptionField),
+			slog.String("hint", rfcErr.Reason()),
+			slog.String("debug", rfcErr.Debug()),
+			slog.Int("status_code", rfcErr.StatusCode()),
+		}
+		if cause := rfcErr.Cause(); cause != nil {
+			attrs = append(attrs, slog.String("cause", cause.Error()))
+		}
+		slog.LogAttrs(ctx, slog.LevelDebug, "Fosite authorize error details", attrs...)
+	}
+
+	// Keep authorization policy denials in Pocket ID so users can see why access was refused
+	if errors.Is(err, fosite.ErrAccessDenied) {
+		h.redirectToInteractionError(c, err)
+		return
+	}
+
+	if ar.IsRedirectURIValid() {
+		// Send the error to the client
+		// fosite delivers the error through response_mode=form_post as well, so it needs the same CSP relaxation as the success path
+		h.relaxCSPForFormPost(c, ar)
+		h.provider.WriteAuthorizeError(ctx, c.Writer, ar, err)
+		return
+	}
+
+	h.redirectToInteractionError(c, err)
+}
+
+func (h *authorizationHandler) redirectToInteractionError(c *gin.Context, err error) {
+	errorMessage := "An unknown error occurred during the authorization request."
+	if rfcErr, ok := errors.AsType[*fosite.RFC6749Error](err); ok {
+		if rfcErr.HintField != "" {
+			errorMessage = rfcErr.HintField
+		} else if rfcErr.DescriptionField != "" {
+			errorMessage = rfcErr.DescriptionField
+		}
+	} else if appErr, ok := errors.AsType[*apperror.Error](err); ok {
+		errorMessage = appErr.ClientMessage()
+	}
+
+	query := url.Values{}
+	query.Set("error", errorMessage)
+	c.Redirect(http.StatusFound, "/interaction/error?"+query.Encode())
+}
+
+func requestMetaFromGin(c *gin.Context) requestMeta {
+	return requestMeta{
+		IPAddress: c.ClientIP(),
+		UserAgent: c.Request.UserAgent(),
+	}
+}
+
+func authorizeRequestParams(requester fosite.AuthorizeRequester) map[string]string {
+	params := make(map[string]string)
+	for key, values := range requester.GetRequestForm() {
+		// The raw "request" object is dropped alongside "request_uri": its claims are already merged
+		// into the form, and replaying the JWT on interaction resume would re-validate its "exp"
+		// against the resume time, failing logins that took longer than the object's lifetime.
+		if len(values) == 0 || key == "request" || key == "request_uri" || key == "interaction" {
+			continue
+		}
+		params[key] = values[0]
+	}
+
+	return params
+}
+
+// relaxCSPForFormPost loosens the per-request Content-Security-Policy when the response is delivered via response_mode=form_post
+func (h *authorizationHandler) relaxCSPForFormPost(c *gin.Context, ar fosite.AuthorizeRequester) {
+	if ar.GetResponseMode() != fosite.ResponseModeFormPost || ar.GetRedirectURI() == nil {
+		return
+	}
+	c.Header("Content-Security-Policy", utils.BuildFormPostCSP(utils.GetCSPNonce(c), ar.GetRedirectURI().String(), formPostScriptCSPHash))
+}

@@ -1,0 +1,2797 @@
+## v2.19.2
+
+### Other
+
+- remove question issue template ([b023bc3](https://github.com/pocket-id/pocket-id/commit/b023bc3d57adbe1f0bf087c3171d7ced58db9991) by @stonith404)
+- bump react-email ([5953b14](https://github.com/pocket-id/pocket-id/commit/5953b14b24a24064317ded4c9c799075b2c0e776) by @stonith404)
+- Bump the "all-dependencies" group with 4 updates across multiple ecosystems ([\#1872](https://github.com/pocket-id/pocket-id/pull/1872) by @dependabot\[bot\])
+- update vulnerable dependencies ([32c4d7f](https://github.com/pocket-id/pocket-id/commit/32c4d7f7a4853b503752d00163074aa4440ae297) by @stonith404)
+- add OSS Scanner Dockerfile and threat model ([166d84f](https://github.com/pocket-id/pocket-id/commit/166d84f8182957e04b2823debdb0190c61e37938) by @stonith404)
+- update francis to 0.2.0 ([\#1879](https://github.com/pocket-id/pocket-id/pull/1879) by @ItalyPaleAle)
+- Bump the "all-dependencies" group with 3 updates across multiple ecosystems ([\#1887](https://github.com/pocket-id/pocket-id/pull/1887) by @dependabot\[bot\])
+- release v2 patches from the v2 branch ([38f5bfb](https://github.com/pocket-id/pocket-id/commit/38f5bfb9c03712b2b8e38e5be4ee518f733c0b8a) by @Elias Schneider)
+- update francis to 0.2.1 ([755e9e8](https://github.com/pocket-id/pocket-id/commit/755e9e84a4355517179fb0282e00ebf8117633ce) by @Elias Schneider)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.19.1...v2.19.2
+## v2.19.1
+
+### Bug Fixes
+
+- bump go to v1.27.3, alpine to 3.24.3 and distroless to debian13 ([ec14aa2](https://github.com/pocket-id/pocket-id/commit/ec14aa22af23324f1820adec1e70fb67c5554156) by @kmendell)
+
+### Other
+
+- Bump vite-plus from 1.1.0 to 1.3.0 ([274977c](https://github.com/pocket-id/pocket-id/commit/274977cf733039f280459de46d2de2e596696d2b) by @kmendell)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.19.0...v2.19.1
+## v2.19.0
+
+### Features
+
+- add configurable login notification modes ([\#1813](https://github.com/pocket-id/pocket-id/pull/1813) by @stonith404)
+- make my apps searchable and sortable ([9c0c304](https://github.com/pocket-id/pocket-id/commit/9c0c304d59369db8370db96cd629a3394f33e5a7) by @stonith404)
+- add ability to override SSRF protection with `OUTBOUND_ALLOWED_HOSTS_*` ([3ffe013](https://github.com/pocket-id/pocket-id/commit/3ffe013886a9af9e60090a1ddbf8cb399a55b948) by @stonith404)
+- use WebAuthn recommended passkey algorithms ([\#1841](https://github.com/pocket-id/pocket-id/pull/1841) by @michaelbeaumont)
+- add ability to force email verification ([\#1837](https://github.com/pocket-id/pocket-id/pull/1837) by @stonith404)
+- add ability to deselect scopes on authorization ([f81d62c](https://github.com/pocket-id/pocket-id/commit/f81d62c16ceba0e0130ff210d663775068f1a0a8) by @stonith404)
+
+### Bug Fixes
+
+- prevent DN collisions from assigning another user's privileges ([be45b1c](https://github.com/pocket-id/pocket-id/commit/be45b1c9a3df571b8b8caa33c888e31d0f83096e) by @stonith404)
+- remove distracting tab switch animation ([69065e7](https://github.com/pocket-id/pocket-id/commit/69065e7cf009b4ac99b5fbc6a11dd6d919560f0a) by @stonith404)
+- export from SQLite fails to import into Postgres because of mismatched schemas ([8ab3dd4](https://github.com/pocket-id/pocket-id/commit/8ab3dd437b3c43371d542ef90f4ec32602f34c42) by @stonith404)
+- limit upload size for profile pictures and application images ([\#1819](https://github.com/pocket-id/pocket-id/pull/1819) by @IonBazan)
+- prevent email enumeration via one-time access email request ([ade5520](https://github.com/pocket-id/pocket-id/commit/ade55206b865042d038e7c5e314eccccdded7197) by @stonith404)
+- rate limit updating the own account to slow down user enumeration ([226648c](https://github.com/pocket-id/pocket-id/commit/226648c7b2ced55d3084366a6297472942b414db) by @stonith404)
+- reject cross-origin state-changing requests ([d31e3e1](https://github.com/pocket-id/pocket-id/commit/d31e3e12866d9c404d6c8323171fe01d80eb83dd) by @stonith404)
+- limit LDAP profile picture downloads to 2 MB ([d8ca4b6](https://github.com/pocket-id/pocket-id/commit/d8ca4b67525f3d656bd5a917af52d5849bd23d94) by @stonith404)
+- remove unused oidc client `/meta` endpoint ([a58ccea](https://github.com/pocket-id/pocket-id/commit/a58ccea6cec3aaa17a643921c5df461fc0886320) by @stonith404)
+- only return minimal client metadata for public interaction endpoint ([03fc844](https://github.com/pocket-id/pocket-id/commit/03fc844d055437e1391b29cdda0b28c8c94e6bdb) by @stonith404)
+- prefix audit log event translation keys to separate them from UI strings ([c7a7bce](https://github.com/pocket-id/pocket-id/commit/c7a7bce426b7abae55613c526ca6dd43fe6b1bdc) by @stonith404)
+- push group removals made on the user page to SCIM ([\#1830](https://github.com/pocket-id/pocket-id/pull/1830) by @jayhemnani9910)
+- push group removals if user gets deleted to SCIM ([d7f58e5](https://github.com/pocket-id/pocket-id/commit/d7f58e5a33f0df528a0df59c63d86e41ffd2578f) by @stonith404)
+- fallback to username if chars in name are not supported for avatars ([e2cacac](https://github.com/pocket-id/pocket-id/commit/e2cacac193968e4fd49b19f5cc62b0cfd9bbfef8) by @stonith404)
+- keep integer custom claim values exact in ID tokens and userinfo ([\#1829](https://github.com/pocket-id/pocket-id/pull/1829) by @jayhemnani9910)
+- push users disabled by the LDAP sync to SCIM ([\#1834](https://github.com/pocket-id/pocket-id/pull/1834) by @jayhemnani9910)
+- skip LDAP users without an email instead of failing the whole sync ([\#1835](https://github.com/pocket-id/pocket-id/pull/1835) by @jayhemnani9910)
+- send the API key expiration email again after a renewal ([\#1847](https://github.com/pocket-id/pocket-id/pull/1847) by @jayhemnani9910)
+- find user groups by their friendly name in the admin search ([\#1854](https://github.com/pocket-id/pocket-id/pull/1854) by @choksi2212)
+- keep login notification and email verification settings on upgrade ([6b9aba1](https://github.com/pocket-id/pocket-id/commit/6b9aba173572aa1ea79a6157e77da3169a3754d8) by @stonith404)
+
+### Documentation
+
+- update README screenshots ([ed45102](https://github.com/pocket-id/pocket-id/commit/ed45102da12110c03ceebb3c9730a68d422f8cfb) by @stonith404)
+
+### Other
+
+- update AAGUIDs ([\#1811](https://github.com/pocket-id/pocket-id/pull/1811) by @pocket-id-bot\[bot\])
+- Bump sharp from 0.35.4 to 0.35.5 ([\#1818](https://github.com/pocket-id/pocket-id/pull/1818) by @dependabot\[bot\])
+- Bump source-map-js from 1.2.1 to 1.2.2 ([\#1817](https://github.com/pocket-id/pocket-id/pull/1817) by @dependabot\[bot\])
+- Bump the "all-dependencies" group with 4 updates across multiple ecosystems ([\#1826](https://github.com/pocket-id/pocket-id/pull/1826) by @dependabot\[bot\])
+- resolve golangci-lint failures ([1bd6f00](https://github.com/pocket-id/pocket-id/commit/1bd6f006c8b92092641a6f1960e966c3cb6b999a) by @stonith404)
+- authorize API routes with per-endpoint scopes ([\#1823](https://github.com/pocket-id/pocket-id/pull/1823) by @stonith404)
+- use crowdin github actions to sync translations ([4416b0c](https://github.com/pocket-id/pocket-id/commit/4416b0c2489119f1eb37fda938951e9bf8ad61f0) by @stonith404)
+- combine CI checks into a single workflow file ([74e08f0](https://github.com/pocket-id/pocket-id/commit/74e08f0253cb619061d74dbeab2895e67d45d54e) by @stonith404)
+- add missing `cache-dependency-path` to go setup ([b0b09ce](https://github.com/pocket-id/pocket-id/commit/b0b09ce6cdbd3f4667389194272a6f7ee876d00b) by @stonith404)
+- add gofmt to stage hook ([54f28f8](https://github.com/pocket-id/pocket-id/commit/54f28f86d09dfbd8dc10702c893ac38a91f79a4f) by @stonith404)
+- update Fosite ([fd7951f](https://github.com/pocket-id/pocket-id/commit/fd7951f70efe0cb4dcaa182956b73e4ab26c543a) by @stonith404)
+- move shared files into `.github` repo ([3355b65](https://github.com/pocket-id/pocket-id/commit/3355b656b5e0eadbfa50089d741d0bd34a16ffb0) by @stonith404)
+- update golangci-lint ([\#1833](https://github.com/pocket-id/pocket-id/pull/1833) by @ItalyPaleAle)
+- upgrade francis to 0.1.1 ([\#1838](https://github.com/pocket-id/pocket-id/pull/1838) by @ItalyPaleAle)
+- upgrade Fosite ([a7f5d80](https://github.com/pocket-id/pocket-id/commit/a7f5d80aea7e6bf76c9e8e207857a315f4441a2f) by @stonith404)
+- fix flaky unit test ([5bf7e1d](https://github.com/pocket-id/pocket-id/commit/5bf7e1d2629788dd520a69a5d87d906293d2d58e) by @stonith404)
+- run CI checks on `v*` branches as well ([80a504b](https://github.com/pocket-id/pocket-id/commit/80a504b454f273efea6b692857f1ceb6a34b2e7f) by @stonith404)
+- remove unused issuer check from refresh token API validation ([03cab69](https://github.com/pocket-id/pocket-id/commit/03cab69d6bf50bbaf0d0255373b3c8362547bce0) by @stonith404)
+- upgrade Fosite ([6b6ef9a](https://github.com/pocket-id/pocket-id/commit/6b6ef9ad004faa8453470293215f9a0424743d84) by @stonith404)
+- Bump the "all-dependencies" group with 4 updates across multiple ecosystems ([\#1851](https://github.com/pocket-id/pocket-id/pull/1851) by @dependabot\[bot\])
+- update AAGUIDs ([\#1856](https://github.com/pocket-id/pocket-id/pull/1856) by @pocket-id-bot\[bot\])
+- restore the PR template in the repo so the PR quality check can read it ([09d4da8](https://github.com/pocket-id/pocket-id/commit/09d4da81a9553561dfeb7cec8a9f5808460fb127) by @stonith404)
+- Bump follow-redirects from 1.16.0 to 1.16.1 ([\#1862](https://github.com/pocket-id/pocket-id/pull/1862) by @dependabot\[bot\])
+- bump Fosite ([b352c81](https://github.com/pocket-id/pocket-id/commit/b352c81c387b0df049ca7b448f4f5b70f2f79b3f) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.18.0...v2.19.0
+## v2.18.0
+
+### Features
+
+- display passkey setup page for users coming from the login page ([4d2a5e4](https://github.com/pocket-id/pocket-id/commit/4d2a5e423e0038728344c4fef860b88591e1777b) by @stonith404)
+- add ability to search and select icons from selfh.st ([\#1807](https://github.com/pocket-id/pocket-id/pull/1807) by @stonith404)
+- pin table row actions and add them to details pages ([3e201b5](https://github.com/pocket-id/pocket-id/commit/3e201b5bb254b8acaa7ae8bfafe6584723d685f5) by @stonith404)
+
+### Other
+
+- Bump the "all-dependencies" group with 4 updates across multiple ecosystems ([\#1805](https://github.com/pocket-id/pocket-id/pull/1805) by @dependabot\[bot\])
+- add project_id to crowdin.yml ([5560060](https://github.com/pocket-id/pocket-id/commit/556006074cc8e05a753c593669a31aa353a24793) by @stonith404)
+- upgrade to SvelteKit 3 ([10efd16](https://github.com/pocket-id/pocket-id/commit/10efd1647c9cc3e83b247d4879587d9d74d80b16) by @stonith404)
+- fix vulnerable dependency versions ([c968123](https://github.com/pocket-id/pocket-id/commit/c9681234dd95c1f3e91c83b9ed01f09b44910df1) by @stonith404)
+- add vite-plus as node toolchain ([\#1806](https://github.com/pocket-id/pocket-id/pull/1806) by @kmendell)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.17.0...v2.18.0
+## v2.17.0
+
+### Features
+
+- add FRANCIS_HOST to connect to a standalone Francis runtime ([\#1768](https://github.com/pocket-id/pocket-id/pull/1768) by @ItalyPaleAle)
+- add OIDC back-channel logout ([\#1734](https://github.com/pocket-id/pocket-id/pull/1734) by @alecrubin)
+- restore old behavior of automatically creating client secret ([d259a15](https://github.com/pocket-id/pocket-id/commit/d259a151318bc4a126d3433386afab591f65f778) by @stonith404)
+- redesign OIDC client details page ([e588e3f](https://github.com/pocket-id/pocket-id/commit/e588e3fc5dcbdd666b15e4017bae40602148cd65) by @stonith404)
+- add support Cloudflare location headers ([1a91eaa](https://github.com/pocket-id/pocket-id/commit/1a91eaa98c9f6839770c54a93f5f5d0eafb1f290) by @stonith404)
+- update authorization animation slightly ([1f67bb7](https://github.com/pocket-id/pocket-id/commit/1f67bb749313d482ff902eabf8b997e1167c97c8) by @stonith404)
+- make page transitions smoother and faster ([9c926bd](https://github.com/pocket-id/pocket-id/commit/9c926bd66f96b7667f9c3f78fe8d036504bfa99a) by @stonith404)
+
+### Bug Fixes
+
+- typo in fallback error message in interaction error page ([\#1776](https://github.com/pocket-id/pocket-id/pull/1776) by @samuelQUANSAH)
+- handle localStorage not enabled gracefully ([\#1786](https://github.com/pocket-id/pocket-id/pull/1786) by @ItalyPaleAle)
+- add 1min grace period to refresh token invalidation ([b2d4fae](https://github.com/pocket-id/pocket-id/commit/b2d4faebf703756f0afdc26cf910b58f9c2557fe) by @stonith404)
+- use URI validation message for API resources ([0235984](https://github.com/pocket-id/pocket-id/commit/02359840f21b7c4ee0293fd2125b5bff1a117560) by @stonith404)
+
+### Documentation
+
+- add missing swaggertype ([77a597d](https://github.com/pocket-id/pocket-id/commit/77a597dc4c45da23f783785642f1ad5b56865841) by @stonith404)
+
+### Other
+
+- use Pocket ID as identity for automated commits ([5086ece](https://github.com/pocket-id/pocket-id/commit/5086ece8db13c89f8dba838aa16e7e83c00af8e1) by @stonith404)
+- update AAGUIDs ([\#1771](https://github.com/pocket-id/pocket-id/pull/1771) by @pocket-id-bot\[bot\])
+- pin all GH Actions to a specific SHA ([\#1772](https://github.com/pocket-id/pocket-id/pull/1772) by @ItalyPaleAle)
+- Bump the "all-dependencies" group with 1 update across multiple ecosystems ([\#1780](https://github.com/pocket-id/pocket-id/pull/1780) by @dependabot\[bot\])
+- update AAGUIDs ([\#1788](https://github.com/pocket-id/pocket-id/pull/1788) by @pocket-id-bot\[bot\])
+- upgrade Francis to 0.1.0 ([\#1787](https://github.com/pocket-id/pocket-id/pull/1787) by @ItalyPaleAle)
+- add Vercel OSS Program badge ([fd478ff](https://github.com/pocket-id/pocket-id/commit/fd478ffa81d41e79ead46dfb8a23a4780f52f5c7) by @kmendell)
+- bring `database.json` up-to-date ([642ccc8](https://github.com/pocket-id/pocket-id/commit/642ccc80d399af1100bbcf334f29f893a3270f87) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.16.0...v2.17.0
+## v2.16.0
+
+### Features
+
+- update the design of the email templates ([3249b0d](https://github.com/pocket-id/pocket-id/commit/3249b0dc8c00220b74e1008f94812cc02f6313c1) by @stonith404)
+
+### Bug Fixes
+
+- loading indicator not visible ([4ba2899](https://github.com/pocket-id/pocket-id/commit/4ba28992ff496caa20b6abe6f614eeb1fa777469) by @stonith404)
+- login with Yubikey not working in some Safari browsers ([4858db3](https://github.com/pocket-id/pocket-id/commit/4858db3bb4cf6619cad8682da61f0e793f24874c) by @stonith404)
+
+### Other
+
+- upgrade git cliff version ([98f9e39](https://github.com/pocket-id/pocket-id/commit/98f9e39785ae913d65ab3ad3523feaf907d3686e) by @stonith404)
+- update francis to rc7 ([\#1769](https://github.com/pocket-id/pocket-id/pull/1769) by @ItalyPaleAle)
+- include frontend dependencies in SBOM ([5a1c6f0](https://github.com/pocket-id/pocket-id/commit/5a1c6f0547f779175107d31ea13d4f24000a1a65) by @stonith404)
+- include SBOMs for binaries ([8fe53ed](https://github.com/pocket-id/pocket-id/commit/8fe53ed42c522717c8c69612cc700e195b8ab2ea) by @stonith404)
+- replace local release script with action ([ba246e6](https://github.com/pocket-id/pocket-id/commit/ba246e61465378bc11571fcc77ca01c936fda174) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.15.0...v2.16.0
+## v2.15.0
+
+### Bug Fixes
+
+- Update de.json Translation ([#1705](https://github.com/pocket-id/pocket-id/pull/1705) by @tw-)
+- show long login code button regardless where the user is coming from ([059d45d](https://github.com/pocket-id/pocket-id/commit/059d45d50ed9e6b1229295ab9ccb9d566d3910fe) by @stonith404)
+- make sorting of strings case insensitive ([3657012](https://github.com/pocket-id/pocket-id/commit/3657012f93e442327bdf11a36bd31acc26410803) by @stonith404)
+- trim values loaded from _FILE env vars in AppConfig ([#1741](https://github.com/pocket-id/pocket-id/pull/1741) by @ItalyPaleAle)
+- serve bundled logo if no custom logo is set ([#1748](https://github.com/pocket-id/pocket-id/pull/1748) by @ItalyPaleAle)
+- add missing `await` to catch redirect invalid URL errors ([fd99a6b](https://github.com/pocket-id/pocket-id/commit/fd99a6b74207d1291bfd975c33d632d2f5ed9fd0) by @stonith404)
+- limit JPG and PNG pixels to prevent decompression bomb ([5cbacd8](https://github.com/pocket-id/pocket-id/commit/5cbacd81e67f8bb7340f01d0416524f4d48adb78) by @stonith404)
+- show more user friendly error page for authorize interaction failures ([81cb290](https://github.com/pocket-id/pocket-id/commit/81cb290bed57b7fc84b9102262ff3192ce9fae3e) by @stonith404)
+- don't auto submit OAuth device codes ([43c0b79](https://github.com/pocket-id/pocket-id/commit/43c0b797fd7f3914b759a173a4518bed399e8de7) by @stonith404)
+- prevent PAR requirement bypass via conflicting request parameters ([2084dff](https://github.com/pocket-id/pocket-id/commit/2084dffd8d4a569d86f058376a1caa72a8755571) by @stonith404)
+- German translations for client secrets ([#1759](https://github.com/pocket-id/pocket-id/pull/1759) by @darioackermann)
+- preserve AAGUID icon hashes on Windows ([b816360](https://github.com/pocket-id/pocket-id/commit/b8163605acbdcf08772dc77582fcb48be1158906) by @stonith404)
+- default profile picture empty if username contains only one char ([4edfaf6](https://github.com/pocket-id/pocket-id/commit/4edfaf622a8f7c05b19f3fb4cc07cbe6984c7df9) by @stonith404)
+
+### Documentation
+
+- update AI Usage Policy ([d9e9df9](https://github.com/pocket-id/pocket-id/commit/d9e9df9960714f588ec65201afdde1cef26b0b9a) by @stonith404)
+- update PR template ([cad8b68](https://github.com/pocket-id/pocket-id/commit/cad8b68abc3eecd56a22a84aa897fe54c8deae66) by @stonith404)
+
+### Features
+
+- show admin UI warning for SQLite on networked filesystem ([#1713](https://github.com/pocket-id/pocket-id/pull/1713) by @ItalyPaleAle)
+- list allowed groups when hovering over allowed group count ([#1671](https://github.com/pocket-id/pocket-id/pull/1671) by @kmendell)
+- add explicit public keys for federated client credentials ([#1702](https://github.com/pocket-id/pocket-id/pull/1702) by @ItalyPaleAle)
+- use HS256 for Pocket ID's own session tokens + fixes ([#1733](https://github.com/pocket-id/pocket-id/pull/1733) by @ItalyPaleAle)
+- replace individual save buttons with single "unsaved changes bar" ([#1757](https://github.com/pocket-id/pocket-id/pull/1757) by @stonith404)
+- include passkey icons based on AAGUID ([#1756](https://github.com/pocket-id/pocket-id/pull/1756) by @michaelbeaumont)
+
+### Other
+
+- Bump the "all-dependencies" group with 2 updates across multiple ecosystems ([#1711](https://github.com/pocket-id/pocket-id/pull/1711) by @dependabot[bot])
+- add Hungarian language files ([dd2fc67](https://github.com/pocket-id/pocket-id/commit/dd2fc67c87c098632e7b915b6079b202df5d6f55) by @stonith404)
+- Bump the "all-dependencies" group with 3 updates across multiple ecosystems ([#1725](https://github.com/pocket-id/pocket-id/pull/1725) by @dependabot[bot])
+- update Go to `v1.27.0` ([f235104](https://github.com/pocket-id/pocket-id/commit/f235104aed02ea5aa2ff3e05c03fc151b34e0191) by @stonith404)
+- update golangci-lint version ([6ff9a5b](https://github.com/pocket-id/pocket-id/commit/6ff9a5ba7eb995a8db166ebfb119799325085a8e) by @stonith404)
+- update Francis to rc.2 ([#1728](https://github.com/pocket-id/pocket-id/pull/1728) by @ItalyPaleAle)
+- upgrade jwx to v4 ([#1730](https://github.com/pocket-id/pocket-id/pull/1730) by @ItalyPaleAle)
+- Bump google.golang.org/grpc from 1.83.0 to 1.83.1 in /backend ([#1736](https://github.com/pocket-id/pocket-id/pull/1736) by @dependabot[bot])
+- update Francis to rc.5 ([#1738](https://github.com/pocket-id/pocket-id/pull/1738) by @ItalyPaleAle)
+- Bump the "all-dependencies" group with 3 updates across multiple ecosystems ([#1739](https://github.com/pocket-id/pocket-id/pull/1739) by @dependabot[bot])
+- update Francis to rc.6 ([#1745](https://github.com/pocket-id/pocket-id/pull/1745) by @ItalyPaleAle)
+- Bump adm-zip from 0.6.0 to 0.6.1 ([#1747](https://github.com/pocket-id/pocket-id/pull/1747) by @dependabot[bot])
+- update AAGUIDs ([#1751](https://github.com/pocket-id/pocket-id/pull/1751) by @github-actions[bot])
+- Bump the "all-dependencies" group with 2 updates across multiple ecosystems ([#1742](https://github.com/pocket-id/pocket-id/pull/1742) by @dependabot[bot])
+- update vulnerable packages ([1ee34fd](https://github.com/pocket-id/pocket-id/commit/1ee34fddea9bfe1f08709387ec3186a792707c29) by @stonith404)
+- upgrade alpine packages on image build ([d2c2cda](https://github.com/pocket-id/pocket-id/commit/d2c2cdaa5d7f87541dcee69d7f6c57ad22a8bf09) by @stonith404)
+- Bump the "all-dependencies" group with 2 updates across multiple ecosystems ([#1760](https://github.com/pocket-id/pocket-id/pull/1760) by @dependabot[bot])
+- fix type checks ([c22003f](https://github.com/pocket-id/pocket-id/commit/c22003f6deff96482192d055a5e1c96e5991fcad) by @stonith404)
+- Bump go.opentelemetry.io/otel/exporters/zipkin from 1.44.0 to 1.45.0 in /backend ([#1765](https://github.com/pocket-id/pocket-id/pull/1765) by @dependabot[bot])
+- update backend dependencies ([6060c6e](https://github.com/pocket-id/pocket-id/commit/6060c6e12e62bfe2474f78caace77a205f73d498) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.14.0...v2.15.0
+
+## v2.14.0
+
+### Bug Fixes
+
+- improve validation of app config variables ([9e637d5](https://github.com/pocket-id/pocket-id/commit/9e637d5aec178adb757cfdc961236f92731c16f3) by @stonith404)
+- wrong loading indicator shown on device page ([2f43ce4](https://github.com/pocket-id/pocket-id/commit/2f43ce41fe2d19365585453aa1d6d1528c73bee6) by @stonith404)
+- ignore unsupported grant types in client ID metadata documents ([#1682](https://github.com/pocket-id/pocket-id/pull/1682) by @ItalyPaleAle)
+- don't show "show hidden apps" if none available ([03498e2](https://github.com/pocket-id/pocket-id/commit/03498e2f511eb91e1fea442be781b252828520c7) by @stonith404)
+- ignore trailing slash in resources ([9421d43](https://github.com/pocket-id/pocket-id/commit/9421d43f8ecab0f3d245d79196cb2f33818c8054) by @stonith404)
+- update de.json Translation ([#1699](https://github.com/pocket-id/pocket-id/pull/1699) by @tw-)
+- remove unnecessary information from oidc client details ([900346a](https://github.com/pocket-id/pocket-id/commit/900346a1c38b1d7b6d9897b7aa3cb9182f7dafed) by @stonith404)
+
+### Documentation
+
+- change logo image in README.md ([76f6b24](https://github.com/pocket-id/pocket-id/commit/76f6b249f26fb8d8b3215f519c6d39a311415606) by @stonith404)
+- add error responses to openapi spec ([#1684](https://github.com/pocket-id/pocket-id/pull/1684) by @aclerici38)
+
+### Features
+
+- add animated logo as default logo ([0c9a03e](https://github.com/pocket-id/pocket-id/commit/0c9a03e5193b52ff752134f7df39a24fae19dae2) by @stonith404)
+- hide apps without launch url on My Apps page ([3ca9a55](https://github.com/pocket-id/pocket-id/commit/3ca9a55c7135d785bc6089fa33dc6d8287fd3f59) by @stonith404)
+- support multiple client secrets per OIDC client ([#1679](https://github.com/pocket-id/pocket-id/pull/1679) by @ItalyPaleAle)
+- serve RFC 8414 authorization server metadata ([#1685](https://github.com/pocket-id/pocket-id/pull/1685) by @jfroy)
+- allow admins to auto grant APIs to CIMD clients ([#1692](https://github.com/pocket-id/pocket-id/pull/1692) by @stonith404)
+- improve tooltip design ([6a441b1](https://github.com/pocket-id/pocket-id/commit/6a441b1f9b139b41f33e70e06f4eb2ae7303cb28) by @stonith404)
+- reduce one time access code length for better UX ([a487c78](https://github.com/pocket-id/pocket-id/commit/a487c7855056b126b7b109f30ba7452c4539b04e) by @stonith404)
+
+### Other
+
+- Bump the "all-dependencies" group with 3 updates across multiple ecosystems ([#1668](https://github.com/pocket-id/pocket-id/pull/1668) by @dependabot[bot])
+- update francis to beta 21 ([#1669](https://github.com/pocket-id/pocket-id/pull/1669) by @ItalyPaleAle)
+- migrate LDAP sync to an actor ([#1651](https://github.com/pocket-id/pocket-id/pull/1651) by @ItalyPaleAle)
+- bump pnpm to v11.20.0 ([#1670](https://github.com/pocket-id/pocket-id/pull/1670) by @kmendell)
+- remove unnecessary curl dependency from Dockerfile ([987d1a8](https://github.com/pocket-id/pocket-id/commit/987d1a8b599eadaad32a4c68c9bcf25f12eeab2f) by @stonith404)
+- update Francis to beta 22 ([#1676](https://github.com/pocket-id/pocket-id/pull/1676) by @ItalyPaleAle)
+- update AAGUIDs ([#1678](https://github.com/pocket-id/pocket-id/pull/1678) by @github-actions[bot])
+- move `iss` param handling to Fosite ([1bb21c5](https://github.com/pocket-id/pocket-id/commit/1bb21c5d73d6942a9c6959f8be4e7fbe93e2eb29) by @stonith404)
+- fix flaky update application image e2e test ([#1690](https://github.com/pocket-id/pocket-id/pull/1690) by @ItalyPaleAle)
+- move API key cleanup job to actor ([#1687](https://github.com/pocket-id/pocket-id/pull/1687) by @ItalyPaleAle)
+- Bump the "all-dependencies" group with 4 updates across multiple ecosystems ([#1693](https://github.com/pocket-id/pocket-id/pull/1693) by @dependabot[bot])
+- use fix version for `github.com/italypaleale/go-kit` ([07580d9](https://github.com/pocket-id/pocket-id/commit/07580d9f9fc2ac457da7a7ba3d325068afffc6f2) by @stonith404)
+- update AAGUIDs ([#1696](https://github.com/pocket-id/pocket-id/pull/1696) by @github-actions[bot])
+- move remaining database cleanup jobs to actors ([#1698](https://github.com/pocket-id/pocket-id/pull/1698) by @ItalyPaleAle)
+- migrate SCIM sync to actor + add tests ([#1680](https://github.com/pocket-id/pocket-id/pull/1680) by @ItalyPaleAle)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.13.0...v2.14.0
+
+## v2.13.0
+
+### Bug Fixes
+
+- retry qr code login polling for known transient gateway responses ([7039692](https://github.com/pocket-id/pocket-id/commit/703969278be2a6b2cae30ca89dba4b73b0c969fa) by @stonith404)
+- decrease QR code login session duration to 5 minutes ([e35be30](https://github.com/pocket-id/pocket-id/commit/e35be309a3d40064617ef0ad557476c93ba983a9) by @stonith404)
+- show more user-friendly error message if QR code has expired ([27199f6](https://github.com/pocket-id/pocket-id/commit/27199f61d4adaeca463db68980dae6c2a885c5b4) by @stonith404)
+- one-time-access-token CLI fails with "RuntimePSKs is required" ([#1637](https://github.com/pocket-id/pocket-id/pull/1637) by @salcatroppa)
+- session revoke fails if orphaned session tokens exist ([598895e](https://github.com/pocket-id/pocket-id/commit/598895e7c53df28598d578896f6396241e9e9ef7) by @stonith404)
+- disable api key auth for webauthn register endpoints ([db64b15](https://github.com/pocket-id/pocket-id/commit/db64b150be9046ee971f520b4c30f3b3d434facf) by @stonith404)
+- explicitly set SameSite to Lax for cookies ([69d55ad](https://github.com/pocket-id/pocket-id/commit/69d55ada6c695c47f764285ca9e94736e50a8103) by @stonith404)
+- explicitly require JSON for request bodies ([1238bf0](https://github.com/pocket-id/pocket-id/commit/1238bf0f378340d101c90295990b514131b10fe7) by @stonith404)
+- don't rely on content length header for optional json binding ([2c7d1b6](https://github.com/pocket-id/pocket-id/commit/2c7d1b63e1a366718d0c1951475e791922bb2445) by @stonith404)
+- respect log level in HTTP request logs ([488c50e](https://github.com/pocket-id/pocket-id/commit/488c50ef95e3e88f3a0085a67b399819a4647c7f) by @stonith404)
+- don't skip rate limits for loopback addresses ([140b5d3](https://github.com/pocket-id/pocket-id/commit/140b5d3cb440ccc7a30a3a1c9aae2f7a9d5efb4a) by @stonith404)
+- make OIDC client token lifetimes optional ([#1650](https://github.com/pocket-id/pocket-id/pull/1650) by @ItalyPaleAle)
+- in non-HA mode, increase AlarmLeaseDuration ([#1660](https://github.com/pocket-id/pocket-id/pull/1660) by @ItalyPaleAle)
+- separate TLS inputs and preserve certificate reloads ([#1653](https://github.com/pocket-id/pocket-id/pull/1653) by @stonith404)
+- brotli compression ignored ([#1661](https://github.com/pocket-id/pocket-id/pull/1661) by @stonith404)
+- align last signed in text left ([c87012a](https://github.com/pocket-id/pocket-id/commit/c87012ae01cb9e85ab305fffc40347297eff6ffb) by @stonith404)
+
+### Features
+
+- make oauth access tokens RFC 9068 compliant ([7c55bdf](https://github.com/pocket-id/pocket-id/commit/7c55bdf115fc5b7fea89ef5cd3c79dc926ddf5ac) by @stonith404)
+- implement OAuth Client ID Metadata Document ([#1526](https://github.com/pocket-id/pocket-id/pull/1526) by @jfroy)
+- add ability to customize session duration of clients ([#1641](https://github.com/pocket-id/pocket-id/pull/1641) by @stonith404)
+- add observability to actors ([#1646](https://github.com/pocket-id/pocket-id/pull/1646) by @ItalyPaleAle)
+- include Francis data in Pocket ID backups ([#1645](https://github.com/pocket-id/pocket-id/pull/1645) by @ItalyPaleAle)
+- add settings for limiting what passkeys can be used ([#1662](https://github.com/pocket-id/pocket-id/pull/1662) by @stonith404)
+
+### Other
+
+- preserve tab indentation for package.json in release script ([a1ebf4e](https://github.com/pocket-id/pocket-id/commit/a1ebf4e98b65fa465f99bfa2fb9694a903076a32) by @stonith404)
+- Bump the "all-dependencies" group with 3 updates across multiple ecosystems ([#1639](https://github.com/pocket-id/pocket-id/pull/1639) by @dependabot[bot])
+- use paraglide markup instead of custom implementation ([b08ac7b](https://github.com/pocket-id/pocket-id/commit/b08ac7bf7de04872a83913db19fc6392ecf7bd96) by @stonith404)
+- fix wrong database version in `database.json` ([281bea5](https://github.com/pocket-id/pocket-id/commit/281bea54d351128e29bb2e54455a7cb2e619554a) by @stonith404)
+- standardize API error handling ([#1635](https://github.com/pocket-id/pocket-id/pull/1635) by @stonith404)
+- add deepsec to gitignore ([e3e0ddc](https://github.com/pocket-id/pocket-id/commit/e3e0ddc192d01de35b8f907144ac66b6b2963ac0) by @stonith404)
+- upgrade vulnerable dependencies ([9320144](https://github.com/pocket-id/pocket-id/commit/9320144991fa0f9f6c1419af0c78c7e2395dc61e) by @stonith404)
+- remove unused curl dependency from Dockerfile ([98160b2](https://github.com/pocket-id/pocket-id/commit/98160b20a15056535bf12d357b7d97c63a165cd0) by @stonith404)
+- remove invalid unit test ([95809dd](https://github.com/pocket-id/pocket-id/commit/95809dd29cea92e30f54c34876305f7a27a595bd) by @stonith404)
+- use smaller francis.bin ([4fe6f06](https://github.com/pocket-id/pocket-id/commit/4fe6f0688c2760abfe35558ffc9126f3a1e9edc0) by @stonith404)
+- move GeoLite to its own package ([#1647](https://github.com/pocket-id/pocket-id/pull/1647) by @ItalyPaleAle)
+- fix formatting ([#1666](https://github.com/pocket-id/pocket-id/pull/1666) by @Copilot)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.12.0...v2.13.0
+
+## v2.12.0
+
+### Bug Fixes
+
+- sync group membership for users added at creation time ([#1600](https://github.com/pocket-id/pocket-id/pull/1600) by @ItalyPaleAle)
+- relax Francis DB usage while HA is still WIP ([#1602](https://github.com/pocket-id/pocket-id/pull/1602) by @ItalyPaleAle)
+- honor webauthn user verification setting ([0983e91](https://github.com/pocket-id/pocket-id/commit/0983e911693396d8c807331ed867be5369f501f2) by @stonith404)
+- horizontal shadow of cards in light mode cut off ([599f7d1](https://github.com/pocket-id/pocket-id/commit/599f7d118df0225abf96429c42c26d7c627942a3) by @stonith404)
+- datatype mismatch between postgres and sqlite causes import to fail ([ad06ea6](https://github.com/pocket-id/pocket-id/commit/ad06ea6e008ea61edd5a84df0fbab3125ff047c7) by @stonith404)
+- show only accessible clients on "My Apps" page ([e10f66c](https://github.com/pocket-id/pocket-id/commit/e10f66c07a8f4a8d42a03bb7edda14d4bf9ba31d) by @stonith404)
+- autofocus one time input fields ([#1605](https://github.com/pocket-id/pocket-id/pull/1605) by @James18232)
+- enforce user verification for login assertions ([4743d59](https://github.com/pocket-id/pocket-id/commit/4743d5967a6b7e53d6d8c670c62f0bdea3abd4af) by @stonith404)
+- make oidc device code redemption atomic ([6bd058a](https://github.com/pocket-id/pocket-id/commit/6bd058ac46c771ff7dc133b72f42c6c341dba6f4) by @stonith404)
+- race condition in initial admin setup ([ca28ddc](https://github.com/pocket-id/pocket-id/commit/ca28ddcb04ce2905aaad0c5255caceae723cda56) by @stonith404)
+- fail early if webauthn session invalid ([968f97f](https://github.com/pocket-id/pocket-id/commit/968f97fa6174a1319bd33309bf647be3d11bd816) by @stonith404)
+
+### Features
+
+- add support for proxy protocol ([807bd9e](https://github.com/pocket-id/pocket-id/commit/807bd9e037f201ba1d87c65387091a61c5e65e54) by @stonith404)
+- add declaritive user id configuration ([#1622](https://github.com/pocket-id/pocket-id/pull/1622) by @schnz)
+- migrate one-time and signup tokens to an actor ([#1611](https://github.com/pocket-id/pocket-id/pull/1611) by @ItalyPaleAle)
+- add support for declaritive client secret configuration ([#1619](https://github.com/pocket-id/pocket-id/pull/1619) by @schnz)
+- add qr code alternative sign in method ([#1594](https://github.com/pocket-id/pocket-id/pull/1594) by @stonith404)
+- migrate app locks to Francis ([#1624](https://github.com/pocket-id/pocket-id/pull/1624) by @ItalyPaleAle)
+- drop user initiated one time access token login method ([0c27f73](https://github.com/pocket-id/pocket-id/commit/0c27f733b95de63855264327443cc65cf2ccefba) by @stonith404)
+- display country and city on qr code login approval screen ([9e72bc1](https://github.com/pocket-id/pocket-id/commit/9e72bc1c70506146919a21058f5e20b0f042082a) by @stonith404)
+
+### Other
+
+- Bump the "all-dependencies" group with 3 updates across multiple ecosystems ([#1599](https://github.com/pocket-id/pocket-id/pull/1599) by @dependabot[bot])
+- update AAGUIDs ([#1608](https://github.com/pocket-id/pocket-id/pull/1608) by @github-actions[bot])
+- use actors for db configuration ([#1604](https://github.com/pocket-id/pocket-id/pull/1604) by @ItalyPaleAle)
+- remove not used permissions ([942bb3b](https://github.com/pocket-id/pocket-id/commit/942bb3be2e92bd7b6bf1d89c40cab49544194d43) by @stonith404)
+- upgrade vulnerable dependencies ([f6b02ef](https://github.com/pocket-id/pocket-id/commit/f6b02efe4542cd3a57ba222c42fafe1e968a32d8) by @stonith404)
+- fix missing data in `database.json` ([6e859de](https://github.com/pocket-id/pocket-id/commit/6e859de2dd55dfc59d9cde3fab5d7a9789c6aca9) by @stonith404)
+- Bump the "all-dependencies" group with 3 updates across multiple ecosystems ([#1621](https://github.com/pocket-id/pocket-id/pull/1621) by @dependabot[bot])
+- use `NewTextHandler` instead  of `NewHandler` for tint ([8563934](https://github.com/pocket-id/pocket-id/commit/8563934fd5d410c13e9ff58e56a07bef0ea22726) by @stonith404)
+- run unit tests on windows and linux ([31d62c6](https://github.com/pocket-id/pocket-id/commit/31d62c65e59f184d13aeef74860839665c183c78) by @stonith404)
+- correctly close filesystems ([6bd4679](https://github.com/pocket-id/pocket-id/commit/6bd4679bab03e16b85a0591d2c95ebdd530cf785) by @stonith404)
+- modularize email module and use actor for email verification ([#1625](https://github.com/pocket-id/pocket-id/pull/1625) by @stonith404)
+- pin version of fosite fork ([91d3712](https://github.com/pocket-id/pocket-id/commit/91d37126fa916932a1097a4a60c161965aa24e50) by @stonith404)
+- translations remove unused translation strings ([d5eb3fe](https://github.com/pocket-id/pocket-id/commit/d5eb3fe62c5ddbfd7f2bc5c116f755dccd40d6b4) by @stonith404)
+- enforce eslint rules ([9060291](https://github.com/pocket-id/pocket-id/commit/9060291475aaadb5be2149213cfb647bb8381247) by @stonith404)
+- upgrade vulnerable dependencies ([0c5e014](https://github.com/pocket-id/pocket-id/commit/0c5e0149cd070b39e5da7722471885432d5b5452) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.11.0...v2.12.0
+
+## v2.11.0
+
+### Bug Fixes
+
+- postgres migration 20250822 remove public schema references ([#1582](https://github.com/pocket-id/pocket-id/pull/1582) by @MarcoScabbiolo)
+- allow insecure callback URLs by default until next major release ([d9ead47](https://github.com/pocket-id/pocket-id/commit/d9ead47d19451b256336b7d0eb46606a236928f3) by @stonith404)
+- sort signup tokens by creation date explicitly ([77398a5](https://github.com/pocket-id/pocket-id/commit/77398a558df45e1e332316afbb0f0c5e416350ea) by @stonith404)
+- login code mobile ux ([#1584](https://github.com/pocket-id/pocket-id/pull/1584) by @James18232)
+- `INTERNAL_APP_URL` not reflected in UI URLs ([316cf47](https://github.com/pocket-id/pocket-id/commit/316cf47cebdb7337cef13a533a8105ef4364b6f5) by @stonith404)
+- ignore tab URL hashes in navigation history ([a3f27ec](https://github.com/pocket-id/pocket-id/commit/a3f27ec2ec1ce784ca11e5fb41f92a0367715393) by @stonith404)
+- block link-local addresses in SSRF protection ([9714296](https://github.com/pocket-id/pocket-id/commit/9714296efb3768e4f29479f48628318565a3bed7) by @stonith404)
+
+### Documentation
+
+- update README ([ff5e565](https://github.com/pocket-id/pocket-id/commit/ff5e565eebbba0dba991cf06ad76249b7af26432) by @stonith404)
+
+### Features
+
+- add support for CIDR and IP address lists in `TRUST_PROXY` ([187cd8d](https://github.com/pocket-id/pocket-id/commit/187cd8ddcd4d6babec73bdf7e81eab2dee1ade04) by @stonith404)
+
+### Other
+
+- manage instance ID in the KV table ([#1579](https://github.com/pocket-id/pocket-id/pull/1579) by @ItalyPaleAle)
+- Bump the "all-dependencies" group with 3 updates across multiple ecosystems ([#1578](https://github.com/pocket-id/pocket-id/pull/1578) by @dependabot[bot])
+- remove low demand issue closer ([bb03660](https://github.com/pocket-id/pocket-id/commit/bb03660bd7d48dfd0b022936dabd2b2880c9b382) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.10.0...v2.11.0
+
+## v2.10.0
+
+### Bug Fixes
+
+- login code null submission and login code length check ([#1512](https://github.com/pocket-id/pocket-id/pull/1512) by @James18232)
+- don't reject `offline_access`scope ([2ed7035](https://github.com/pocket-id/pocket-id/commit/2ed703540d901eaf58427d0cf54fb0a5e68bc6a0) by @stonith404)
+- CSP error with `response_mode=form_post` ([16b5c16](https://github.com/pocket-id/pocket-id/commit/16b5c16a664a2f1b20ad824d907294de9cb60c9e) by @stonith404)
+- various bugs in observability / OTel ([#1564](https://github.com/pocket-id/pocket-id/pull/1564) by @ItalyPaleAle)
+- restore behavior that unknown scopes get ignored ([34e9a6d](https://github.com/pocket-id/pocket-id/commit/34e9a6d1982a3d50bb3874aff3316c3154113725) by @stonith404)
+- re-check api permissions on access token refresh ([e8cb0c8](https://github.com/pocket-id/pocket-id/commit/e8cb0c831ca914522babce101cf8533acbf94136) by @stonith404)
+- merge requested scopes instead of replacing them ([5e2cc6f](https://github.com/pocket-id/pocket-id/commit/5e2cc6f40e5c7139b122d8a59ca121af1fdbdceb) by @stonith404)
+- device authorization resolve resource creating device_code ([2f55b7c](https://github.com/pocket-id/pocket-id/commit/2f55b7cbc3d601128061dbc70014e77f5b1ec211) by @stonith404)
+- add missing burst to rate limit ([f3b6ceb](https://github.com/pocket-id/pocket-id/commit/f3b6ceb8768616fb155455cceb7a539c13c3da9f) by @stonith404)
+- disable one time access token exchange for disabled users ([c85a4e6](https://github.com/pocket-id/pocket-id/commit/c85a4e63dabcb2c71bbf35e03482969cb07a6df8) by @stonith404)
+- /authorize endpoint crashes when list of scopes is empty ([#1575](https://github.com/pocket-id/pocket-id/pull/1575) by @ItalyPaleAle)
+- mobile layout improvements ([2910c51](https://github.com/pocket-id/pocket-id/commit/2910c517bb7545f932c34321907299064b08bb10) by @stonith404)
+
+### Documentation
+
+- add link to API docs ([968d072](https://github.com/pocket-id/pocket-id/commit/968d07229eeefa763fe981e5c7e4970d5640c783) by @stonith404)
+- fix wrong OpenAPI documentation ([da3677f](https://github.com/pocket-id/pocket-id/commit/da3677f33d50c96f06ee1d8f65d9f802f67af270) by @stonith404)
+
+### Features
+
+- upgrade shadcn components ([80509c8](https://github.com/pocket-id/pocket-id/commit/80509c83ee0ce92b416286217c11f116d5b9fe2a) by @stonith404)
+- improve error handling on authorize page ([8689ddd](https://github.com/pocket-id/pocket-id/commit/8689ddd72b143ceac29adb63d624cc18585f580e) by @stonith404)
+- add ability to skip consent for client ([d467855](https://github.com/pocket-id/pocket-id/commit/d4678558708542719c5d3cc48c48d3053f37800c) by @stonith404)
+- prompt admin with PKCE client support hint ([#1499](https://github.com/pocket-id/pocket-id/pull/1499) by @James18232)
+- login code input boxes ([#1545](https://github.com/pocket-id/pocket-id/pull/1545) by @James18232)
+- drop TOFU support for callback URL ([931a6c2](https://github.com/pocket-id/pocket-id/commit/931a6c2adb39fb8cdfe18487f4206f8848b3d026) by @stonith404)
+- add OAuth APIs with scoped permissions ([#1542](https://github.com/pocket-id/pocket-id/pull/1542) by @stonith404)
+- add support for unencrypted OIDC request parameter ([25dcad7](https://github.com/pocket-id/pocket-id/commit/25dcad757a7d7670bfd8d4d4ac209e26dc919596) by @stonith404)
+- add description field to oidc clients ([#1547](https://github.com/pocket-id/pocket-id/pull/1547) by @seanmckenzie428)
+- add tab bar navigation for crowded pages ([28a553f](https://github.com/pocket-id/pocket-id/commit/28a553f63b85ecccaa764279af5f65ea1bf2d013) by @stonith404)
+
+### Other
+
+- close low-demand feature requests ([35987b9](https://github.com/pocket-id/pocket-id/commit/35987b9c8d44efb08928d031ab9f1e84eda9882f) by @stonith404)
+- Bump the "all-dependencies" group with 2 updates across multiple ecosystems ([#1528](https://github.com/pocket-id/pocket-id/pull/1528) by @dependabot[bot])
+- fix locators after shadcn upgrade ([dbbe2a4](https://github.com/pocket-id/pocket-id/commit/dbbe2a403aa6afc39e14cf559bd074c6640e3b0c) by @stonith404)
+- use fosite for OAuth 2.0 logic ([#1520](https://github.com/pocket-id/pocket-id/pull/1520) by @stonith404)
+- wrap last two migrations into transaction ([cf9a319](https://github.com/pocket-id/pocket-id/commit/cf9a31986f521451bc9e1c2754a09ee2d141cd57) by @stonith404)
+- remove dead code ([519cda0](https://github.com/pocket-id/pocket-id/commit/519cda0eef1083274deed9bf6c501b815986241a) by @stonith404)
+- update vulnerable dependencies ([e538ea0](https://github.com/pocket-id/pocket-id/commit/e538ea0bf1ba4d5f70f977c7021bfa4f4543070e) by @stonith404)
+- fix flaky test ([7eaaea7](https://github.com/pocket-id/pocket-id/commit/7eaaea717b418c167b733723eeb000073c6915fe) by @stonith404)
+- add AGENTS.md ([d0243fe](https://github.com/pocket-id/pocket-id/commit/d0243fe396fb4ae2ec8d66ab95c80c8a283a631b) by @stonith404)
+- use goreleaser for binaries and static image builds ([#1478](https://github.com/pocket-id/pocket-id/pull/1478) by @kmendell)
+- add support for Docker Hub ([99ab38d](https://github.com/pocket-id/pocket-id/commit/99ab38dc799d07d4d91863199b1350fb7d06e03e) by @stonith404)
+- remove static next image tag ([49305ed](https://github.com/pocket-id/pocket-id/commit/49305ed1f98d838167703d3dc2f6e3e5786fb9fc) by @stonith404)
+- don't build unnecessary binaries for `next` image ([4b957a0](https://github.com/pocket-id/pocket-id/commit/4b957a0106899666b55420b61d2bb12d08d82022) by @stonith404)
+- change Depot project ([cdc2374](https://github.com/pocket-id/pocket-id/commit/cdc23744ae1cb731184828afe326fc2a1712c02f) by @stonith404)
+- don't tag `next` image with current version ([cf54786](https://github.com/pocket-id/pocket-id/commit/cf54786cc3bfe59bd01e8d5cbb4a3ccabb7d6466) by @stonith404)
+- add exempt user to PR quality checks ([254ae88](https://github.com/pocket-id/pocket-id/commit/254ae88cda67ecc1095b0b738630388c93d90c44) by @stonith404)
+- migrate API key functionality to single `apikey` module ([9fce987](https://github.com/pocket-id/pocket-id/commit/9fce98710679e522233c3b7af8d3b6cd2ce5594c) by @stonith404)
+- migrate Webauthn functionality to single `webauthn` module ([58fcf7c](https://github.com/pocket-id/pocket-id/commit/58fcf7cbe665be8d7670170097735fe8efe31c6f) by @stonith404)
+- migrate signup functionality to single `usersignup` module ([ecad31c](https://github.com/pocket-id/pocket-id/commit/ecad31cae2dbbc51d15a7007601829c57accff75) by @stonith404)
+- make API key renewal date picker navigation date-independent ([#1560](https://github.com/pocket-id/pocket-id/pull/1560) by @ItalyPaleAle)
+- integrate Francis actor framework for background jobs, cron scheduling, and rate limiting ([#1556](https://github.com/pocket-id/pocket-id/pull/1556) by @ItalyPaleAle)
+- Bump the "all-dependencies" group with 3 updates across multiple ecosystems ([#1563](https://github.com/pocket-id/pocket-id/pull/1563) by @dependabot[bot])
+- use go-kit for sending emails ([#1565](https://github.com/pocket-id/pocket-id/pull/1565) by @ItalyPaleAle)
+- update AAGUIDs ([#1567](https://github.com/pocket-id/pocket-id/pull/1567) by @github-actions[bot])
+- move Pocket ID specific logic from Fosite into Pocket ID repo ([9a94aa0](https://github.com/pocket-id/pocket-id/commit/9a94aa0694abda5bdd7c9380cbadc1f080a8027e) by @stonith404)
+- update Fosite version ([337fc6f](https://github.com/pocket-id/pocket-id/commit/337fc6fd1ec53aa65275f5ad964869462664a194) by @stonith404)
+- pass transaction to `resolveResource` ([7667377](https://github.com/pocket-id/pocket-id/commit/7667377c98c01f45dc5e959c999c60143efca1ef) by @stonith404)
+- remove redundant dtos ([fa2d08c](https://github.com/pocket-id/pocket-id/commit/fa2d08cb6d60bc3c9d8865c36c07ef8868e8ed9e) by @stonith404)
+- rename migrations ([c72da58](https://github.com/pocket-id/pocket-id/commit/c72da58eaf45eafff3232bcc050fd87e84ae050f) by @stonith404)
+- remove duplicate fosite config properties ([190914f](https://github.com/pocket-id/pocket-id/commit/190914fd72481c2da7372215f369a5b96feed3f0) by @stonith404)
+- fix migration version in `database.json` ([a5f2192](https://github.com/pocket-id/pocket-id/commit/a5f2192d67045cca63a4e0038e118986754d4184) by @stonith404)
+- fix wrong migration name ([ce7d3a7](https://github.com/pocket-id/pocket-id/commit/ce7d3a7e1d6ab08696a149fa8805fcb99337afa9) by @stonith404)
+- run formatter ([59a6868](https://github.com/pocket-id/pocket-id/commit/59a6868ecdb017354d4dfd8d70c4ba0710f02f08) by @stonith404)
+- upgrade go version ([f62d476](https://github.com/pocket-id/pocket-id/commit/f62d476c56d39f7f20c443eb430462e9141d31fa) by @stonith404)
+
+### Performance Improvements
+
+- include permissions in api list response ([8035a4c](https://github.com/pocket-id/pocket-id/commit/8035a4c8d589109e767a031dae3c473ea3e77d75) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.9.0...v2.10.0
+
+## v2.9.0
+
+### Bug Fixes
+
+- issues with loading new font ([#1496](https://github.com/pocket-id/pocket-id/pull/1496) by @MelvinSnijders)
+- PAR parameters not respected by authorize page ([3d9d4de](https://github.com/pocket-id/pocket-id/commit/3d9d4de61940747c64f4a5a4ba24010be2a2fbb6) by @stonith404)
+- add responsive css for api/user/group/client page add buttons ([#1508](https://github.com/pocket-id/pocket-id/pull/1508) by @James18232)
+- load Gloock font from static path instead of inline ([89b4abb](https://github.com/pocket-id/pocket-id/commit/89b4abb8b5cc71b62f458f966f2778259b167838) by @stonith404)
+- update terminology from public key code exchange to proof key co… ([#1515](https://github.com/pocket-id/pocket-id/pull/1515) by @maxwassiljew)
+- callback URL validation not validated if prompt=none ([8a75774](https://github.com/pocket-id/pocket-id/commit/8a7577497131229badb35cb4b3a4227b1300afff) by @stonith404)
+- passkey card not rounded ([84678c3](https://github.com/pocket-id/pocket-id/commit/84678c3a7bfa1f601261943f03aa935626fe54a2) by @stonith404)
+
+### Documentation
+
+- add AI Usage Policy to CONTRIBUTING.md ([fea933b](https://github.com/pocket-id/pocket-id/commit/fea933b62d6a2899bf1e46fc75dab8b6bca81a0f) by @stonith404)
+- add PR template ([bf9f76b](https://github.com/pocket-id/pocket-id/commit/bf9f76bbd5b8d49dabda74f1c3de5120ea5db698) by @stonith404)
+- add "needs more upvotes" label as default ([fc42f62](https://github.com/pocket-id/pocket-id/commit/fc42f6211d410ea8db75018292df8f311078a7fe) by @stonith404)
+- fix link to watchtower repo ([#1500](https://github.com/pocket-id/pocket-id/pull/1500) by @wollew)
+
+### Features
+
+- add support for Pushed Authorization Requests (RFC9126) ([#1404](https://github.com/pocket-id/pocket-id/pull/1404) by @Zenithar)
+
+### Other
+
+- fix linter issues ([4f97cd4](https://github.com/pocket-id/pocket-id/commit/4f97cd4188b6028e955c8dc62e122ec409b32db3) by @stonith404)
+- update AAGUIDs ([#1511](https://github.com/pocket-id/pocket-id/pull/1511) by @github-actions[bot])
+- run svelte check and unit tests in breaking branches ([83b45f6](https://github.com/pocket-id/pocket-id/commit/83b45f682dc89b2019b1812157157f431dfd3ad7) by @stonith404)
+- run formatter ([2726ddd](https://github.com/pocket-id/pocket-id/commit/2726ddd0c23ab6ae22f307bf8d377fdfd73e1c14) by @stonith404)
+- bump vite from 8.0.13 to 8.0.16 ([#1521](https://github.com/pocket-id/pocket-id/pull/1521) by @dependabot[bot])
+- npm dependabot not run from root ([c0d96a0](https://github.com/pocket-id/pocket-id/commit/c0d96a0b1349d7dd0dec65c78dcdc2e043713ff8) by @stonith404)
+- fix wrong assertion ([effd2a1](https://github.com/pocket-id/pocket-id/commit/effd2a146f9b85d8bf1df203b4970aafc7ae24f8) by @stonith404)
+- Bump the "all-dependencies" group with 4 updates across multiple ecosystems ([#1523](https://github.com/pocket-id/pocket-id/pull/1523) by @dependabot[bot])
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.8.0...v2.9.0
+
+## v2.8.0
+
+### Bug Fixes
+
+- delete refresh tokens on end-session to prevent reuse after logout ([#1458](https://github.com/pocket-id/pocket-id/pull/1458) by @wucm667)
+- return 404 status code for `.well-known` routes if not found ([714b5b3](https://github.com/pocket-id/pocket-id/commit/714b5b3307bb012b94e66e8dcb1de93a2d62eceb) by @stonith404)
+- add `email_verified` to reserved claims list ([8b22fca](https://github.com/pocket-id/pocket-id/commit/8b22fcaaa475984bb4c42306487035073d7c47e3) by @stonith404)
+- reject unknown PKCE code challenge methods ([ce6bdb9](https://github.com/pocket-id/pocket-id/commit/ce6bdb9d7e6c0f1eaaa21ddb6d808e41088a38b8) by @stonith404)
+- make stream of downloaded logos seekable for S3 checksum calculation ([cc9163f](https://github.com/pocket-id/pocket-id/commit/cc9163f577280d7c278dc744e20d0505dbe83ede) by @stonith404)
+- scope confirmation wasn't shown if account selection was prompted ([272d147](https://github.com/pocket-id/pocket-id/commit/272d1479bd64b4a068bfe4dfa5ba4cd3c5e90505) by @stonith404)
+- add support for unix socket mode in healthcheck ([a712196](https://github.com/pocket-id/pocket-id/commit/a71219637af1746e9faba5274b6095da676ec555) by @stonith404)
+- restore cross-platform binary builds ([7027296](https://github.com/pocket-id/pocket-id/commit/7027296632ab82cd9930f2fbe60054c2421688c4) by @stonith404)
+
+### Documentation
+
+- update SECURITY.md ([bb5a111](https://github.com/pocket-id/pocket-id/commit/bb5a111e3d51ad56fc074df7083022e3d4e25369) by @stonith404)
+
+### Features
+
+- delete OAuth refresh token on RP initiated logout ([#1480](https://github.com/pocket-id/pocket-id/pull/1480) by @stonith404)
+- remove EXIF/XMP metadata from uploaded images ([#1477](https://github.com/pocket-id/pocket-id/pull/1477) by @stonith404)
+- add support for `response_mode=fragment` ([0c95b7c](https://github.com/pocket-id/pocket-id/commit/0c95b7c3cc171ed77b51f236009b5ff659da0bec) by @stonith404)
+- add support for systemd socket activation ([#1479](https://github.com/pocket-id/pocket-id/pull/1479) by @deviant)
+- improve design trough the whole application ([b3d40a4](https://github.com/pocket-id/pocket-id/commit/b3d40a476b35cfa2451749e9a3d307b7babaeb6b) by @stonith404)
+
+### Other
+
+- update AAGUIDs ([#1476](https://github.com/pocket-id/pocket-id/pull/1476) by @github-actions[bot])
+- upgrade dependencies ([91c2ea2](https://github.com/pocket-id/pocket-id/commit/91c2ea2a6616a500922365d1789f1fa1ba66c112) by @stonith404)
+- remove deprecated http2 package ([e56dc12](https://github.com/pocket-id/pocket-id/commit/e56dc124cee4d3c176c89e7d574ddfde089bcbd1) by @stonith404)
+- apply go 1.26.0 syntax updated ([8ad95b8](https://github.com/pocket-id/pocket-id/commit/8ad95b8af17ba8cbb62168ed0bb54c87e3df379c) by @stonith404)
+- delete refresh tokens on end-session to prevent reuse after logout ([b27a52a](https://github.com/pocket-id/pocket-id/commit/b27a52a5915228383dbdbf0a2c353452cd351d0f) by @stonith404)
+- use dependabot for automatic dependency upgrades ([b9fdd53](https://github.com/pocket-id/pocket-id/commit/b9fdd530c0f370f2fccb6251d700aa6f9bdf4124) by @stonith404)
+- fix invalid schema ([e8c398f](https://github.com/pocket-id/pocket-id/commit/e8c398ffbd6545f76c983f01556bb3b73d40a728) by @stonith404)
+- update AAGUIDs ([#1487](https://github.com/pocket-id/pocket-id/pull/1487) by @github-actions[bot])
+- use custom Playwright route for callback URL checks ([f134247](https://github.com/pocket-id/pocket-id/commit/f13424720b7f5da3978988f0f9169cf303971a13) by @stonith404)
+- fix linter issues ([bc4f75c](https://github.com/pocket-id/pocket-id/commit/bc4f75c44f12a71380042ad4c140d41f4dddc7dd) by @stonith404)
+- don't compare hashes of profile pictures ([9ad2bfc](https://github.com/pocket-id/pocket-id/commit/9ad2bfc7b30e0eb2d7ae1406874b8caba5a1f121) by @stonith404)
+- run formatter ([0616aba](https://github.com/pocket-id/pocket-id/commit/0616abaf7f079d0a35543258e13aa5b4acb4adc0) by @stonith404)
+- use fixed minor version of Go ([e046a03](https://github.com/pocket-id/pocket-id/commit/e046a03364f00001f8699aaa7e902b33c2661118) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.7.0...v2.8.0
+
+## v2.7.0
+
+### Bug Fixes
+
+- add `_FILE` support for `S3_SECRET_ACCESS_KEY_FILE` env var ([#1452](https://github.com/pocket-id/pocket-id/pull/1452) by @ItalyPaleAle)
+- invalidate cache when changing image ([#1462](https://github.com/pocket-id/pocket-id/pull/1462) by @GameTec-live)
+- fall back to Basic auth when PKCE puts client_id in body ([#1466](https://github.com/pocket-id/pocket-id/pull/1466) by @mgabor3141)
+
+### Documentation
+
+- add missing /api prefix to app config swagger routes ([#1454](https://github.com/pocket-id/pocket-id/pull/1454) by @aclerici38)
+
+### Features
+
+- add support for response_mode=form_post ([#1360](https://github.com/pocket-id/pocket-id/pull/1360) by @Johnwulp)
+- add support for "select_account" prompt ([#1453](https://github.com/pocket-id/pocket-id/pull/1453) by @ItalyPaleAle)
+
+### Other
+
+- add script to update deps ([f9f93f0](https://github.com/pocket-id/pocket-id/commit/f9f93f0ef164426d4d4cfb58fcf59ce30b686130) by @stonith404)
+- upgrade dependencies ([20df033](https://github.com/pocket-id/pocket-id/commit/20df033c1fc3d737927447206b4f5e65d3ab4a40) by @stonith404)
+- post dependency upgrade fixes ([e33a9b8](https://github.com/pocket-id/pocket-id/commit/e33a9b8c888988f7b2e6c500e72d53b57db01f34) by @stonith404)
+- migrate github actions runners to depot  runners ([#1329](https://github.com/pocket-id/pocket-id/pull/1329) by @kmendell)
+- fix caching of ldap-cli e2e tests docker build ([#1457](https://github.com/pocket-id/pocket-id/pull/1457) by @kmendell)
+- fix incorrect container name variable ([5c7e5f6](https://github.com/pocket-id/pocket-id/commit/5c7e5f680bb70d3056b11f1a33669cc4bd9a1e17) by @kmendell)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.6.2...v2.7.0
+
+## v2.6.2
+
+### Bug Fixes
+
+- return correct byte count in HEAD request writer ([#1443](https://github.com/pocket-id/pocket-id/pull/1443) by @ahampal)
+- improve keyboard navigation and screen-reader labels ([#1445](https://github.com/pocket-id/pocket-id/pull/1445) by @bjoernch)
+
+### Other
+
+- upgrade to vite 8.0 and pnpm 10.33.0 ([#1446](https://github.com/pocket-id/pocket-id/pull/1446) by @kmendell)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.6.1...v2.6.2
+
+## v2.6.1
+
+### Bug Fixes
+
+- restore login screen background from not showing up ([975d3c7](https://github.com/pocket-id/pocket-id/commit/975d3c79c6a882291c69b31d25bfcd8b7896528c) by @kmendell)
+
+### Other
+
+- ignore webauthn type for swagger generation ([ce4b89d](https://github.com/pocket-id/pocket-id/commit/ce4b89da650f025747fd0dd45eab5cebe29f5a93) by @kmendell)
+- update golangci-lint ([#1440](https://github.com/pocket-id/pocket-id/pull/1440) by @ItalyPaleAle)
+- Add catalan language ([#1436](https://github.com/pocket-id/pocket-id/pull/1436) by @mcasellas)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.6.0...v2.6.1
+
+## v2.6.0
+
+### Bug Fixes
+
+- disable callback URLs with protocols "javascript" and "data" ([#1397](https://github.com/pocket-id/pocket-id/pull/1397) by @ItalyPaleAle)
+- strip Root prefix from S3 List() returned paths ([#1413](https://github.com/pocket-id/pocket-id/pull/1413) by @vtmocanu)
+- use valid Tailwind v4 transition class for auth animation squares ([#1415](https://github.com/pocket-id/pocket-id/pull/1415) by @CoolShades)
+- resolve posixGroup memberUid as bare usernames ([#1422](https://github.com/pocket-id/pocket-id/pull/1422) by @gucong3000)
+- prevent flickering if no background image is set on login page ([027e6f0](https://github.com/pocket-id/pocket-id/commit/027e6f078da0eec712ae22a04b37c86110cb262b) by @stonith404)
+- improve form input layout if description next to it is multi col ([9ec4683](https://github.com/pocket-id/pocket-id/commit/9ec4683d18036ba1945bffd4bce14ec4c2dff7f9) by @stonith404)
+- access token renewal bypasses important checks ([978ac87](https://github.com/pocket-id/pocket-id/commit/978ac87deffec58beaccd15aead975e91b94c8a5) by @stonith404)
+
+### Features
+
+- add ability to revoke passkeys of users as admin ([#1386](https://github.com/pocket-id/pocket-id/pull/1386) by @jose-d)
+- add auth method claim (`amr`) to tokens ([#1433](https://github.com/pocket-id/pocket-id/pull/1433) by @stonith404)
+- add TLS support for HTTP/2 server ([#1429](https://github.com/pocket-id/pocket-id/pull/1429) by @IngmarStein)
+- add OpenID Connect `prompt` Parameter Handling ([#1299](https://github.com/pocket-id/pocket-id/pull/1299) by @rjaakke)
+- return not found. on `/setup` if already completed ([444f7ff](https://github.com/pocket-id/pocket-id/commit/444f7ff2b0269c12f1dba334a37d7db2007e172f) by @stonith404)
+
+### Other
+
+- update AAGUIDs ([#1403](https://github.com/pocket-id/pocket-id/pull/1403) by @github-actions[bot])
+- upgrade dependencies ([f8f7222](https://github.com/pocket-id/pocket-id/commit/f8f7222468dad90f630ae18f7c3fd78e37ba3f77) by @stonith404)
+- combobox not closed in e2e test ([fbdb93f](https://github.com/pocket-id/pocket-id/commit/fbdb93f1a768a05e6e3f2c6fd32b5de50a745bc6) by @stonith404)
+- Security upgrade alpine from latest to 3.23.4 ([#1431](https://github.com/pocket-id/pocket-id/pull/1431) by @stonith404)
+- security upgrade alpine from latest to 3.23.4 ([#1432](https://github.com/pocket-id/pocket-id/pull/1432) by @stonith404)
+- add Catalan language files ([4f09de2](https://github.com/pocket-id/pocket-id/commit/4f09de2cfc7d1e92632116821493a670fc7ee80d) by @stonith404)
+- reduce complexity of `ValidateEnvConfig` and `initRouter` ([a0cb574](https://github.com/pocket-id/pocket-id/commit/a0cb57431372c2bcc59904342597845e92a42a93) by @stonith404)
+- pass context to `shutdownServer` ([ff26c42](https://github.com/pocket-id/pocket-id/commit/ff26c4273a061b7d2c84e7b74f1e0f9e0acc6eb0) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.5.0...v2.6.0
+
+## v2.5.0
+
+### Bug Fixes
+
+- better error messages when there's another instance of Pocket ID running ([#1370](https://github.com/pocket-id/pocket-id/pull/1370) by @ItalyPaleAle)
+- move tooltip inside of form input to prevent shifting ([#1369](https://github.com/pocket-id/pocket-id/pull/1369) by @GameTec-live)
+- derive LDAP admin access from group membership ([#1374](https://github.com/pocket-id/pocket-id/pull/1374) by @kmendell)
+- avoid fmt.Sprintf on custom GeoLiteDBUrl without %s placeholder ([#1384](https://github.com/pocket-id/pocket-id/pull/1384) by @choyri)
+- show a warning when SQLite DB is stored on NFS/SMB/FUSE ([#1381](https://github.com/pocket-id/pocket-id/pull/1381) by @ItalyPaleAle)
+- empty background restore after reboot ([#1379](https://github.com/pocket-id/pocket-id/pull/1379) by @taoso)
+- allow one-char username on signup ([#1378](https://github.com/pocket-id/pocket-id/pull/1378) by @taoso)
+
+### Features
+
+- allow use of svg, png, and ico images types for favicon ([#1289](https://github.com/pocket-id/pocket-id/pull/1289) by @taoso)
+- allow clearing background image ([#1290](https://github.com/pocket-id/pocket-id/pull/1290) by @taoso)
+- add `token_endpoint_auth_methods_supported` to `.well-known` ([#1388](https://github.com/pocket-id/pocket-id/pull/1388) by @owenvoke)
+- add TRUSTED_PLATFORM environment variable for gin ([#1372](https://github.com/pocket-id/pocket-id/pull/1372) by @choyri)
+
+### Other
+
+- add pr quality action ([e3905cf](https://github.com/pocket-id/pocket-id/commit/e3905cf3159fe0370778b0d7d3be64b4246d19be) by @stonith404)
+- separate querying LDAP and updating DB during sync ([#1371](https://github.com/pocket-id/pocket-id/pull/1371) by @ItalyPaleAle)
+- bump google.golang.org/grpc from 1.79.1 to 1.79.3 in /backend in the go_modules group across 1 directory ([#1391](https://github.com/pocket-id/pocket-id/pull/1391) by @dependabot[bot])
+- Improve Latvian translations in lv.json ([#1382](https://github.com/pocket-id/pocket-id/pull/1382) by @Raito00)
+- ignore linter on app image bootstrap ([5251cd9](https://github.com/pocket-id/pocket-id/commit/5251cd97994177c96cb6f9ab3f88ca31367b5b55) by @kmendell)
+- upgrade dependencies ([e7e0176](https://github.com/pocket-id/pocket-id/commit/e7e0176316857186b9683e2f0cb0686189f86cfb) by @kmendell)
+- upgrade dependencies ([3c42a71](https://github.com/pocket-id/pocket-id/commit/3c42a713ce91b4061ffcf86d92cbb19294359ff8) by @kmendell)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.4.0...v2.5.0
+
+## v2.4.0
+
+### Bug Fixes
+
+- improve wildcard matching by using `go-urlpattern` ([#1332](https://github.com/pocket-id/pocket-id/pull/1332) by @stonith404)
+- federated client credentials not working if sub ≠ client_id ([#1342](https://github.com/pocket-id/pocket-id/pull/1342) by @ItalyPaleAle)
+- handle IPv6 addresses in callback URLs ([#1355](https://github.com/pocket-id/pocket-id/pull/1355) by @ItalyPaleAle)
+- wildcard callback URLs blocked by browser-native URL validation ([#1359](https://github.com/pocket-id/pocket-id/pull/1359) by @Copilot)
+- one-time-access-token route should get user ID from URL only ([#1358](https://github.com/pocket-id/pocket-id/pull/1358) by @ItalyPaleAle)
+- various fixes in background jobs ([#1362](https://github.com/pocket-id/pocket-id/pull/1362) by @ItalyPaleAle)
+- use URL keyboard type for callback URL inputs ([a675d07](https://github.com/pocket-id/pocket-id/commit/a675d075d1ab9b7ff8160f1cfc35bc0ea1f1980a) by @stonith404)
+
+### Features
+
+- allow first name and display name to be optional ([#1288](https://github.com/pocket-id/pocket-id/pull/1288) by @taoso)
+
+### Other
+
+- bump svelte from 5.53.2 to 5.53.5 in the npm_and_yarn group across 1 directory ([#1348](https://github.com/pocket-id/pocket-id/pull/1348) by @dependabot[bot])
+- bump @sveltejs/kit from 2.53.0 to 2.53.3 in the npm_and_yarn group across 1 directory ([#1349](https://github.com/pocket-id/pocket-id/pull/1349) by @dependabot[bot])
+- update AAGUIDs ([#1354](https://github.com/pocket-id/pocket-id/pull/1354) by @github-actions[bot])
+- add Português files ([01141b8](https://github.com/pocket-id/pocket-id/commit/01141b8c0f2e96a40fd876d3206e49a694fd12c4) by @kmendell)
+- add Latvian files ([e0fc4cc](https://github.com/pocket-id/pocket-id/commit/e0fc4cc01bd51e5a97e46aad78a493a668049220) by @kmendell)
+- fix wrong seed data ([e7bd66d](https://github.com/pocket-id/pocket-id/commit/e7bd66d1a77c89dde542b4385ba01dc0d432e434) by @stonith404)
+- fix wrong seed data in `database.json` ([f4eb8db](https://github.com/pocket-id/pocket-id/commit/f4eb8db50993edacd90e919b39a5c6d9dd4924c7) by @stonith404)
+
+### Performance Improvements
+
+- frontend performance optimizations ([#1344](https://github.com/pocket-id/pocket-id/pull/1344) by @ItalyPaleAle)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.3.0...v2.4.0
+
+## v2.3.0
+
+### Bug Fixes
+
+- ENCRYPTION_KEY needed for version and help commands ([#1256](https://github.com/pocket-id/pocket-id/pull/1256) by @kmendell)
+- prevent deletion of OIDC provider logo for non admin/anonymous users ([#1267](https://github.com/pocket-id/pocket-id/pull/1267) by @HiMoritz)
+- add `type="url"` to url inputs ([bb7b0d5](https://github.com/pocket-id/pocket-id/commit/bb7b0d56084df49b6a003cc3eaf076884e2cbf60) by @stonith404)
+- increase rate limit for frontend and api requests ([aab7e36](https://github.com/pocket-id/pocket-id/commit/aab7e364e85f1ce13950da93cc50324328cdd96d) by @stonith404)
+- decode URL-encoded client ID and secret in Basic auth ([#1263](https://github.com/pocket-id/pocket-id/pull/1263) by @ypomortsev)
+- token endpoint must not accept params as query string args ([#1321](https://github.com/pocket-id/pocket-id/pull/1321) by @ItalyPaleAle)
+- left align input error messages ([b3fe143](https://github.com/pocket-id/pocket-id/commit/b3fe14313684f9d8c389ed93ea8e479e3681b5c6) by @stonith404)
+- disallow API key renewal and creation with API key authentication ([#1334](https://github.com/pocket-id/pocket-id/pull/1334) by @stonith404)
+
+### Features
+
+- add VERSION_CHECK_DISABLED environment variable ([#1254](https://github.com/pocket-id/pocket-id/pull/1254) by @dihmandrake)
+- add support for HTTP/2 ([56afebc](https://github.com/pocket-id/pocket-id/commit/56afebc242be7ed14b58185425d6445bf18f640a) by @stonith404)
+- manageability of uncompressed geolite db file ([#1234](https://github.com/pocket-id/pocket-id/pull/1234) by @gucheen)
+- add JWT ID for generated tokens ([#1322](https://github.com/pocket-id/pocket-id/pull/1322) by @imnotjames)
+- current version api endpoint ([#1310](https://github.com/pocket-id/pocket-id/pull/1310) by @kmendell)
+
+### Other
+
+- bump @sveltejs/kit from 2.49.2 to 2.49.5 in the npm_and_yarn group across 1 directory ([#1240](https://github.com/pocket-id/pocket-id/pull/1240) by @dependabot[bot])
+- bump svelte from 5.46.1 to 5.46.4 in the npm_and_yarn group across 1 directory ([#1242](https://github.com/pocket-id/pocket-id/pull/1242) by @dependabot[bot])
+- bump devalue to 5.6.2 ([9dbc02e](https://github.com/pocket-id/pocket-id/commit/9dbc02e56871b2de6a39c443e1455efc26a949f7) by @kmendell)
+- upgrade deps ([4811625](https://github.com/pocket-id/pocket-id/commit/4811625cdd64b47ea67b7a9b03396e455896ccd6) by @kmendell)
+- add Estonian files ([53ef61a](https://github.com/pocket-id/pocket-id/commit/53ef61a3e5c4b77edec49d41ab94302bfec84269) by @kmendell)
+- update AAGUIDs ([#1257](https://github.com/pocket-id/pocket-id/pull/1257) by @github-actions[bot])
+- add Norwegian language files ([80558c5](https://github.com/pocket-id/pocket-id/commit/80558c562533e7b4d658d5baa4221d8cd209b47d) by @stonith404)
+- run formatter ([60825c5](https://github.com/pocket-id/pocket-id/commit/60825c5743b0e233ab622fd4d0ea04eb7ab59529) by @kmendell)
+- bump axios from 1.13.2 to 1.13.5 in the npm_and_yarn group across 1 directory ([#1309](https://github.com/pocket-id/pocket-id/pull/1309) by @dependabot[bot])
+- update dependenicies ([94a4897](https://github.com/pocket-id/pocket-id/commit/94a48977ba24e099b6221838d620c365eb1d4bf4) by @kmendell)
+- update AAGUIDs ([#1316](https://github.com/pocket-id/pocket-id/pull/1316) by @github-actions[bot])
+- bump svelte from 5.46.4 to 5.51.5 in the npm_and_yarn group across 1 directory ([#1324](https://github.com/pocket-id/pocket-id/pull/1324) by @dependabot[bot])
+- bump @sveltejs/kit from 2.49.5 to 2.52.2 in the npm_and_yarn group across 1 directory ([#1327](https://github.com/pocket-id/pocket-id/pull/1327) by @dependabot[bot])
+- upgrade dependencies ([0678699](https://github.com/pocket-id/pocket-id/commit/0678699d0cce5448c425b2c16bedab5fc242cbf0) by @stonith404)
+- upgrade to node 24 and go 1.26.0 ([#1328](https://github.com/pocket-id/pocket-id/pull/1328) by @kmendell)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.2.0...v2.3.0
+
+## v2.2.0
+
+### Bug Fixes
+
+- allow changing "require email address" if no SMTP credentials present ([8c68b08](https://github.com/pocket-id/pocket-id/commit/8c68b08c12ba371deda61662e3d048d63d07c56f) by @stonith404)
+- data import from sqlite to postgres fails because of wrong datatype ([1a032a8](https://github.com/pocket-id/pocket-id/commit/1a032a812ef78b250a898d14bec73a8ef7a7859a) by @stonith404)
+- user can't update account if email is empty ([5828fa5](https://github.com/pocket-id/pocket-id/commit/5828fa57791314594625d52475733dce23cc2fcc) by @stonith404)
+- login codes sent by an admin incorrectly requires a device token ([03f9be0](https://github.com/pocket-id/pocket-id/commit/03f9be0d125732e02a8e2c5390d9e6d0c74ce957) by @stonith404)
+- allow exchanging logic code if already authenticated ([0e2cdc3](https://github.com/pocket-id/pocket-id/commit/0e2cdc393e34276bb3b8ea318cdc7261de3f2dec) by @stonith404)
+- db version downgrades don't downgrade db schema ([4df4bcb](https://github.com/pocket-id/pocket-id/commit/4df4bcb6451b4bf88093e04f3222c8737f2c7be3) by @stonith404)
+- use user specific email verified claim instead of global one ([2a11c3e](https://github.com/pocket-id/pocket-id/commit/2a11c3e60942d45c2e5b422d99945bce65a622a2) by @stonith404)
+
+### Features
+
+- add CLI command for encryption key rotation ([#1209](https://github.com/pocket-id/pocket-id/pull/1209) by @stonith404)
+- improve passkey error messages ([2f25861](https://github.com/pocket-id/pocket-id/commit/2f25861d15aefa868042e70d3e21b7b38a6ae679) by @stonith404)
+- make home page URL configurable ([#1215](https://github.com/pocket-id/pocket-id/pull/1215) by @stonith404)
+- add option to renew API key ([#1214](https://github.com/pocket-id/pocket-id/pull/1214) by @stonith404)
+- add support for email verification ([#1223](https://github.com/pocket-id/pocket-id/pull/1223) by @stonith404)
+- add environment variable to disable built-in rate limiting ([9ca3d33](https://github.com/pocket-id/pocket-id/commit/9ca3d33c8897cf49a871783058205bb180529cd2) by @stonith404)
+- add static api key env variable ([#1229](https://github.com/pocket-id/pocket-id/pull/1229) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.1.0...v2.2.0
+
+## v2.1.0
+
+### Bug Fixes
+
+- invalid cookie name for email login code device token ([d6a7b50](https://github.com/pocket-id/pocket-id/commit/d6a7b503ff4571b1291a55a569add3374f5e2d5b) by @stonith404)
+
+### Features
+
+- add issuer url to oidc client details list ([#1197](https://github.com/pocket-id/pocket-id/pull/1197) by @kmendell)
+- process nonce within device authorization flow ([#1185](https://github.com/pocket-id/pocket-id/pull/1185) by @justincmoy)
+
+### Other
+
+- run SCIM jobs in context of gocron instead of custom implementation ([4881130](https://github.com/pocket-id/pocket-id/commit/4881130eadcef0642f8a87650b7c36fda453b51b) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.0.2...v2.1.0
+
+## v2.0.2
+
+### Bug Fixes
+
+- migration fails if users exist with no email address ([2f651ad](https://github.com/pocket-id/pocket-id/commit/2f651adf3b4e8d689461da2083c3afcb1eb1d477) by @stonith404)
+- allow version downgrade database is dirty ([ba00f40](https://github.com/pocket-id/pocket-id/commit/ba00f40bd4b06f31d251599fcb1db63e902a6987) by @stonith404)
+- localhost callback URLs with port don't match correctly ([7c34501](https://github.com/pocket-id/pocket-id/commit/7c345010556f11a593948b2a1ae558b7a8003696) by @stonith404)
+
+### Other
+
+- add no-op migration to postgres ([a24b2af](https://github.com/pocket-id/pocket-id/commit/a24b2afb7b8165bed05976058a8ae797adc245df) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.0.1...v2.0.2
+
+## v2.0.1
+
+### Bug Fixes
+
+- admins imported from LDAP lose admin privileges ([2cce200](https://github.com/pocket-id/pocket-id/commit/2cce2008928081b5e0f0e6bcbc3f43816f082de9) by @stonith404)
+- restore old input input field size ([2341da9](https://github.com/pocket-id/pocket-id/commit/2341da99e9716686cf28dd0680d751ae9da0fadc) by @stonith404)
+
+### Other
+
+- bump image tag to `v2` ([cd2e9f3](https://github.com/pocket-id/pocket-id/commit/cd2e9f3a2ad753815ef8da998f9b54853d953a2a) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v2.0.0...v2.0.1
+
+## v2.0.0
+
+### Bug Fixes
+
+- update image format message to include WEBP ([#1133](https://github.com/pocket-id/pocket-id/pull/1133) by @sebdanielsson)
+- add Japanese locale to inlang settings ([#1142](https://github.com/pocket-id/pocket-id/pull/1142) by @tai-ga)
+- restrict email one time sign in token to same browser ([#1144](https://github.com/pocket-id/pocket-id/pull/1144) by @stonith404)
+- rename `LDAP_ATTRIBUTE_ADMIN_GROUP` env variable to `LDAP_ADMIN_GROUP_NAME` ([e1c5021](https://github.com/pocket-id/pocket-id/commit/e1c5021eeedcbc54bad0eccd72d7ae760be61934) by @stonith404)
+- make wildcard matching in callback URLs more stricter ([078152d](https://github.com/pocket-id/pocket-id/commit/078152d4dbb05dd027ff323f39d090ecb67927c7) by @stonith404)
+- remove ambiguous characters from login code ([d9e7bf9](https://github.com/pocket-id/pocket-id/commit/d9e7bf9eef522d8c081fac2000bace6f95518039) by @stonith404)
+- add missing translations to date picker ([894eaf3](https://github.com/pocket-id/pocket-id/commit/894eaf3cffdd9182b9c29e28b4dcb7e8bcbda26b) by @stonith404)
+
+### Features
+
+- add HTTP `HEAD` method support ([#1135](https://github.com/pocket-id/pocket-id/pull/1135) by @stonith404)
+- add email logo customization ([#1150](https://github.com/pocket-id/pocket-id/pull/1150) by @MelvinSnijders)
+- add ability define user groups for sign up tokens ([#1155](https://github.com/pocket-id/pocket-id/pull/1155) by @stonith404)
+- minor redesign of auth pages ([08e4ffe](https://github.com/pocket-id/pocket-id/commit/08e4ffeb600a4a6644d91b1600b0205997ed1685) by @stonith404)
+- allow audit log retention to be controlled by env variable ([#1158](https://github.com/pocket-id/pocket-id/pull/1158) by @jenic)
+- restrict oidc clients by user groups per default ([#1164](https://github.com/pocket-id/pocket-id/pull/1164) by @stonith404)
+- add "restricted" column to oidc client table ([1bc9f5f](https://github.com/pocket-id/pocket-id/commit/1bc9f5f7e780310d81608381544ba530df7f433b) by @stonith404)
+- drop support for storing JWK on the filesystem ([f014458](https://github.com/pocket-id/pocket-id/commit/f0144584af90b918a3157a298f1bb95928a117b8) by @stonith404)
+- add CLI command for importing and exporting Pocket ID data ([3420a00](https://github.com/pocket-id/pocket-id/commit/3420a000737d89a5c3c6c250d171d96126553beb) by @stonith404)
+- remove DbProvider env variable and calculate it dynamically ([ba2f0f1](https://github.com/pocket-id/pocket-id/commit/ba2f0f18f4bacc5a86217dec0b0dcb6030c40cb9) by @kmendell)
+- add support for SCIM provisioning ([#1182](https://github.com/pocket-id/pocket-id/pull/1182) by @stonith404)
+
+### Other
+
+- update AAGUIDs ([#1128](https://github.com/pocket-id/pocket-id/pull/1128) by @github-actions[bot])
+- fix api key e2e test ([25f67bd](https://github.com/pocket-id/pocket-id/commit/25f67bd25a0ee0cab48d72107722e8c8428fa547) by @stonith404)
+- update AAGUIDs ([#1140](https://github.com/pocket-id/pocket-id/pull/1140) by @github-actions[bot])
+- upgrade dependencies ([90f555f](https://github.com/pocket-id/pocket-id/commit/90f555f7c12ff07545f7cd1a1754a8c19f5a4978) by @stonith404)
+- fix type error after version bump ([edb32d8](https://github.com/pocket-id/pocket-id/commit/edb32d82b2c138433d8eb17d5a6a19f4728ae2d4) by @stonith404)
+- remove `breaking/**` push trigger from actions ([461293b](https://github.com/pocket-id/pocket-id/commit/461293ba1da4ddbff2c77f23a42487b63964e474) by @stonith404)
+- update AAGUIDs ([#1177](https://github.com/pocket-id/pocket-id/pull/1177) by @github-actions[bot])
+- preparation for merge into main branch ([#1113](https://github.com/pocket-id/pocket-id/pull/1113) by @stonith404)
+- bump pnpm to version 10.27.0 ([#1183](https://github.com/pocket-id/pocket-id/pull/1183) by @kmendell)
+- update forms and other areas to use new shadcn components ([#1115](https://github.com/pocket-id/pocket-id/pull/1115) by @kmendell)
+- run formatter ([e4a8ca4](https://github.com/pocket-id/pocket-id/commit/e4a8ca476cc3c7e8d8cdc8de21b5d7d99d07f7a0) by @stonith404)
+- upgrade dependencies ([4776b70](https://github.com/pocket-id/pocket-id/commit/4776b70d96f3dc291394dc79c941738bbe48199a) by @stonith404)
+- change translation string in e2e tests ([ffb2ef9](https://github.com/pocket-id/pocket-id/commit/ffb2ef91bd7bbe78eb29e86cd3675b695e821498) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.16.0...v2.0.0
+
+## v1.16.0
+
+### Bug Fixes
+
+- use `quoted-printable` encoding for mails to prevent line limitation ([5cf73e9](https://github.com/pocket-id/pocket-id/commit/5cf73e9309640d097ba94d97851cf502b7b2e063) by @stonith404)
+- automatically create parent directory of Sqlite db ([cfc9e46](https://github.com/pocket-id/pocket-id/commit/cfc9e464d983b051e7ed4da1620fae61dc73cff2) by @stonith404)
+- global audit log user filter not working ([d98c0a3](https://github.com/pocket-id/pocket-id/commit/d98c0a391a747f9eea70ea01c3f984264a4a7a19) by @stonith404)
+- theme mode not correctly applied if selected manually ([a1cd325](https://github.com/pocket-id/pocket-id/commit/a1cd3251cd2b7d7aca610696ef338c5d01fdce2e) by @stonith404)
+- hide theme switcher on auth pages because of dynamic background ([5d6a7fd](https://github.com/pocket-id/pocket-id/commit/5d6a7fdb58b6b82894dcb9be3b9fe6ca3e53f5fa) by @stonith404)
+
+### Documentation
+
+- add `ENCRYPTION_KEY` to `.env.example` for breaking change preparation ([4eeb06f](https://github.com/pocket-id/pocket-id/commit/4eeb06f29d984164939bf66299075efead87ee19) by @stonith404)
+
+### Features
+
+- light/dark/system mode switcher ([#1081](https://github.com/pocket-id/pocket-id/pull/1081) by @kmendell)
+- add support for S3 storage backend ([#1080](https://github.com/pocket-id/pocket-id/pull/1080) by @stonith404)
+- add support for WEBP profile pictures ([#1090](https://github.com/pocket-id/pocket-id/pull/1090) by @stonith404)
+- add database storage backend ([#1091](https://github.com/pocket-id/pocket-id/pull/1091) by @ItalyPaleAle)
+- adding/removing passkeys creates an entry in audit logs ([#1099](https://github.com/pocket-id/pocket-id/pull/1099) by @ItalyPaleAle)
+- add option to disable S3 integrity check ([a3c9687](https://github.com/pocket-id/pocket-id/commit/a3c968758a17e95b2e55ae179d6601d8ec2cf052) by @stonith404)
+- add `Cache-Control: private, no-store` to all API routes per default ([#1126](https://github.com/pocket-id/pocket-id/pull/1126) by @stonith404)
+
+### Other
+
+- update pnpm to 10.20 ([#1082](https://github.com/pocket-id/pocket-id/pull/1082) by @kmendell)
+- run checks on PR to `breaking/**` branches ([ab9c0f9](https://github.com/pocket-id/pocket-id/commit/ab9c0f9ac092725c70ec3a963f57bc739f425d4f) by @stonith404)
+- use constants for AppEnv values ([#1098](https://github.com/pocket-id/pocket-id/pull/1098) by @ItalyPaleAle)
+- bump golang.org/x/crypto from 0.43.0 to 0.45.0 in /backend in the go_modules group across 1 directory ([#1107](https://github.com/pocket-id/pocket-id/pull/1107) by @dependabot[bot])
+- add Finish files ([ca888b3](https://github.com/pocket-id/pocket-id/commit/ca888b3dd221a209df5e7beb749156f7ea21e1c0) by @stonith404)
+- upgrade dependencies ([4bde271](https://github.com/pocket-id/pocket-id/commit/4bde271b4715f59bd2ed1f7c18a867daf0f26b8b) by @stonith404)
+- fix Dutch validation message ([f523f39](https://github.com/pocket-id/pocket-id/commit/f523f39483a06256892d17dc02528ea009c87a9f) by @stonith404)
+- fix package vulnerabilities ([3d46bad](https://github.com/pocket-id/pocket-id/commit/3d46badb3cecc1ee8eb8bfc9b377108be32d4ffc) by @stonith404)
+- update vscode launch.json ([#1117](https://github.com/pocket-id/pocket-id/pull/1117) by @mnestor)
+- rename file backend value `fs` to `filesystem` ([8d30346](https://github.com/pocket-id/pocket-id/commit/8d30346f642b483653f7a3dec006cb0273927afb) by @stonith404)
+- fix wrong storage value ([b2c718d](https://github.com/pocket-id/pocket-id/commit/b2c718d13d12b6c152e19974d3490c2ed7f5d51d) by @stonith404)
+- run formatter ([14c7471](https://github.com/pocket-id/pocket-id/commit/14c7471b5272cdaf42751701d842348d0d60cd0e) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.15.0...v1.16.0
+
+## v1.15.0
+
+### Bug Fixes
+
+- sorting by PKCE and re-auth of OIDC clients ([e03270e](https://github.com/pocket-id/pocket-id/commit/e03270eb9d474735ff4a1b4d8c90f1857b8cd52b) by @stonith404)
+- replace %lang% placeholder in html lang ([#1071](https://github.com/pocket-id/pocket-id/pull/1071) by @daimond113)
+- disabled property gets ignored when creating an user ([76e0192](https://github.com/pocket-id/pocket-id/commit/76e0192ceec339b6ddb4ad3424057d2bb48fae8f) by @stonith404)
+- remove redundant indexes in Postgres ([6a038fc](https://github.com/pocket-id/pocket-id/commit/6a038fcf9afabbf00c45e42071e9bbe62ecab403) by @stonith404)
+
+### Features
+
+- open edit page on table row click ([f184120](https://github.com/pocket-id/pocket-id/commit/f184120890c32f1e75a918c171084878a10e8b42) by @stonith404)
+- add ability to set default profile picture ([#1061](https://github.com/pocket-id/pocket-id/pull/1061) by @stonith404)
+
+### Other
+
+- add support for OpenBSD binaries ([d683d18](https://github.com/pocket-id/pocket-id/commit/d683d18d9109ca2850e278b78f7bf3e5aca1d34d) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.14.2...v1.15.0
+
+## v1.14.2
+
+### Bug Fixes
+
+- dark oidc client icons not saved on client creation ([#1057](https://github.com/pocket-id/pocket-id/pull/1057) by @mufeedali)
+
+### Other
+
+- add Turkish language files ([a190529](https://github.com/pocket-id/pocket-id/commit/a190529117fe20b5b836d452b382da69abba9458) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.14.1...v1.14.2
+
+## v1.14.1
+
+### Bug Fixes
+
+- Prevent blinding FOUC in dark mode ([#1054](https://github.com/pocket-id/pocket-id/pull/1054) by @mufeedali)
+- use credProps to save passkey on firefox android ([#1055](https://github.com/pocket-id/pocket-id/pull/1055) by @lhoursquentin)
+- ignore trailing slashes in `APP_URL` ([65616f6](https://github.com/pocket-id/pocket-id/commit/65616f65e53f3e62d18a8209929e68ddc8d2b9b8) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.14.0...v1.14.1
+
+## v1.14.0
+
+### Bug Fixes
+
+- ignore trailing slash in URL ([9f0aa55](https://github.com/pocket-id/pocket-id/commit/9f0aa55be67b7a09810569250563bb388b40590a) by @stonith404)
+- use constant time comparisons when validating PKCE challenges ([#1047](https://github.com/pocket-id/pocket-id/pull/1047) by @ItalyPaleAle)
+- only animate login background on initial page load ([b356cef](https://github.com/pocket-id/pocket-id/commit/b356cef766697c621157235ae1d2743f3fe6720d) by @stonith404)
+- make pkce requirement visible in the oidc form if client is public ([47927d1](https://github.com/pocket-id/pocket-id/commit/47927d157470daa5b5a5b30e61a2ba69110eeff9) by @stonith404)
+- prevent page flickering on redirection based on auth state ([10d6403](https://github.com/pocket-id/pocket-id/commit/10d640385ff2078299a07f05e5ca3f0d392eecf7) by @stonith404)
+
+### Features
+
+- add various improvements to the table component ([#961](https://github.com/pocket-id/pocket-id/pull/961) by @stonith404)
+- add support for dark mode oidc client icons ([#1039](https://github.com/pocket-id/pocket-id/pull/1039) by @kmendell)
+
+### Other
+
+- add Japanese files ([068fcc6](https://github.com/pocket-id/pocket-id/commit/068fcc65a62c76f55c9636f830fc769bd59220c4) by @kmendell)
+- bump sveltekit-superforms from 2.27.1 to 2.27.4 in the npm_and_yarn group across 1 directory ([#1031](https://github.com/pocket-id/pocket-id/pull/1031) by @dependabot[bot])
+- update AAGUIDs ([#1041](https://github.com/pocket-id/pocket-id/pull/1041) by @github-actions[bot])
+- bump vite from 7.0.7 to 7.0.8 in the npm_and_yarn group across 1 directory ([#1042](https://github.com/pocket-id/pocket-id/pull/1042) by @dependabot[bot])
+- upgrade dependencies ([6362ff9](https://github.com/pocket-id/pocket-id/commit/6362ff986124d056cc07d214855f198eab9cb97d) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.13.1...v1.14.0
+
+## v1.13.1
+
+### Bug Fixes
+
+- uploading a client logo with an URL fails ([#1008](https://github.com/pocket-id/pocket-id/pull/1008) by @CzBiX)
+- mark any callback url as valid if they contain a wildcard ([#1006](https://github.com/pocket-id/pocket-id/pull/1006) by @stonith404)
+
+### Other
+
+- cleanup root of repo, update workflow actions ([#1003](https://github.com/pocket-id/pocket-id/pull/1003) by @kmendell)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.13.0...v1.13.1
+
+## v1.13.0
+
+### Bug Fixes
+
+- uploading a client logo with an URL fails if folder doesn't exist ([ad8a90c](https://github.com/pocket-id/pocket-id/commit/ad8a90c839cc79b542b60ae66c7eb9254fa5f3e4) by @stonith404)
+
+### Features
+
+- add link to API docs on API key page ([2c74865](https://github.com/pocket-id/pocket-id/commit/2c74865173344766bd43ffd6ae6d93d564de47c7) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.12.0...v1.13.0
+
+## v1.12.0
+
+### Bug Fixes
+
+- do not use cache=shared for in-memory SQLite ([#971](https://github.com/pocket-id/pocket-id/pull/971) by @ItalyPaleAle)
+- show only country in audit log location if no city instead of Unknown ([#977](https://github.com/pocket-id/pocket-id/pull/977) by @vilisseranen)
+- display login location correctly if country or city is not present ([79989fb](https://github.com/pocket-id/pocket-id/commit/79989fb176273cef070dc52c338004b443364db8) by @stonith404)
+- remove previous socket file to prevent bind error ([#979](https://github.com/pocket-id/pocket-id/pull/979) by @Caian)
+- tokens issued with refresh token flow don't contain groups ([#989](https://github.com/pocket-id/pocket-id/pull/989) by @ItalyPaleAle)
+- make logo and oidc client images sizes consistent ([01db8c0](https://github.com/pocket-id/pocket-id/commit/01db8c0a46b69a15a40951ba863e6bc08fa8e1f8) by @stonith404)
+- include port in OIDC client details ([2c1c67b](https://github.com/pocket-id/pocket-id/commit/2c1c67b5e403b365204854c5eb222a68236f3ce0) by @stonith404)
+- prevent endless effect loop in login wrapper ([fc9939d](https://github.com/pocket-id/pocket-id/commit/fc9939d1f1817c0b014cc54e6525b98762835295) by @stonith404)
+- improve back button handling on auth pages ([d47b203](https://github.com/pocket-id/pocket-id/commit/d47b20326f96b6fff405fcc211719bf3068085ee) by @stonith404)
+- allow any image source but disallow base64 ([22f4254](https://github.com/pocket-id/pocket-id/commit/22f42549323fde8b9eaeff682bfa4c7f27e05526) by @stonith404)
+- date locale can't be loaded if locale is `en` ([b81de45](https://github.com/pocket-id/pocket-id/commit/b81de451668c425bfc5ca7cd6071fe2756b31594) by @stonith404)
+
+### Features
+
+- support for url based icons ([#840](https://github.com/pocket-id/pocket-id/pull/840) by @kmendell)
+- hide alternative sign in methods page if email login disabled ([d010be4](https://github.com/pocket-id/pocket-id/commit/d010be4c8804153b4a7f55bd4ea1cedb0df471df) by @stonith404)
+- add required indicator for required inputs ([#993](https://github.com/pocket-id/pocket-id/pull/993) by @stonith404)
+- add the ability to make email optional ([#994](https://github.com/pocket-id/pocket-id/pull/994) by @stonith404)
+
+### Other
+
+- fix whitespace after commit message ([e8b172f](https://github.com/pocket-id/pocket-id/commit/e8b172f1c3df8eca8f463d7fa25a483b90a7e66c) by @stonith404)
+- update AAGUIDs ([#972](https://github.com/pocket-id/pocket-id/pull/972) by @github-actions[bot])
+- remove unnecessary logo fallback ([b746ac0](https://github.com/pocket-id/pocket-id/commit/b746ac0835da059e747a829df3a74e1eae79e107) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.11.2...v1.12.0
+
+## v1.11.2
+
+### Bug Fixes
+
+- embedded paths not found on windows ([c55143d](https://github.com/pocket-id/pocket-id/commit/c55143d8c995fcd604edcdd448c50669e8682e33) by @stonith404)
+- do not treat certain failures in app images bootstrap as fatal ([#966](https://github.com/pocket-id/pocket-id/pull/966) by @ItalyPaleAle)
+- decouple images from app config service ([#965](https://github.com/pocket-id/pocket-id/pull/965) by @stonith404)
+
+### Other
+
+- use git cliff for release notes ([fde4e9b](https://github.com/pocket-id/pocket-id/commit/fde4e9b38a34331137a64ce328dad6faf9885808) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.11.1...v1.11.2
+
+## v1.11.1
+
+### Bug Fixes
+
+- add missing translations([8c9cac2](https://github.com/pocket-id/pocket-id/commit/8c9cac2655ddbe4872234a1b55fdd51d2f3ac31c) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.11.0...v1.11.1
+
+## v1.11.0
+
+### Bug Fixes
+
+- update localized name and description of ldap group name attribute ([#892](https://github.com/pocket-id/pocket-id/pull/892) by @kmendell)
+- disable sign up options in UI if `UI_CONFIG_DISABLED` ([1d7cbc2](https://github.com/pocket-id/pocket-id/commit/1d7cbc2a4ecf352d46087f30b477f6bbaa23adf5) by @stonith404)
+- ensure users imported from LDAP have fields validated ([#923](https://github.com/pocket-id/pocket-id/pull/923) by @ItalyPaleAle)
+- list items on previous page get unselected if other items selected on next page ([6c696b4](https://github.com/pocket-id/pocket-id/commit/6c696b46c8b60b3dc4af35c9c6cf1b8e1322f4cd) by @stonith404)
+- add validation for callback URLs ([#929](https://github.com/pocket-id/pocket-id/pull/929) by @stonith404)
+- key-rotate doesn't work with database storage ([#940](https://github.com/pocket-id/pocket-id/pull/940) by @ItalyPaleAle)
+- make environment variables case insensitive where necessary ([#954](https://github.com/pocket-id/pocket-id/pull/954) by @stonith404)
+- my apps card shouldn't take full width if only one item exists ([e7e53a8](https://github.com/pocket-id/pocket-id/commit/e7e53a8b8c87bee922167d24556aef3ea219b1a2) by @stonith404)
+
+### Features
+
+- add custom base url ([#858](https://github.com/pocket-id/pocket-id/pull/858) by @DerSteph)
+- client_credentials flow support ([#901](https://github.com/pocket-id/pocket-id/pull/901) by @savely-krasovsky)
+- add info box to app settings if UI config is disabled ([a1d8538](https://github.com/pocket-id/pocket-id/commit/a1d8538c64beb4d7e8559934985772fba27623ca) by @stonith404)
+- add CSP header ([#908](https://github.com/pocket-id/pocket-id/pull/908) by @stonith404)
+- return new id_token when using refresh token ([#925](https://github.com/pocket-id/pocket-id/pull/925) by @ItalyPaleAle)
+- add PWA support ([#938](https://github.com/pocket-id/pocket-id/pull/938) by @stonith404)
+- add support for `LOG_LEVEL` env variable ([#942](https://github.com/pocket-id/pocket-id/pull/942) by @stonith404)
+- add user display name field ([#898](https://github.com/pocket-id/pocket-id/pull/898) by @kmendell)
+- allow uppercase usernames ([#958](https://github.com/pocket-id/pocket-id/pull/958) by @stonith404)
+
+### Other
+
+- use react email for email templates ([#734](https://github.com/pocket-id/pocket-id/pull/734) by @kmendell)
+- update AAGUIDs ([#903](https://github.com/pocket-id/pocket-id/pull/903) by @github-actions[bot])
+- add Swedish files ([954fb4f](https://github.com/pocket-id/pocket-id/commit/954fb4f0c8c3126738baa30431e32bad6afaa9f5) by @kmendell)
+- update AAGUIDs ([#926](https://github.com/pocket-id/pocket-id/pull/926) by @github-actions[bot])
+- bump vite from 7.0.6 to 7.0.7 in the npm_and_yarn group across 1 directory ([#932](https://github.com/pocket-id/pocket-id/pull/932) by @dependabot[bot])
+- bump axios from 1.11.0 to 1.12.0 in the npm_and_yarn group across 1 directory ([#943](https://github.com/pocket-id/pocket-id/pull/943) by @dependabot[bot])
+- minify background image ([#933](https://github.com/pocket-id/pocket-id/pull/933) by @ItalyPaleAle)
+- include version in changelog ([cf08929](https://github.com/pocket-id/pocket-id/commit/cf0892922beb56552504025cbfb710878caf7de4) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.10.0...v1.11.0
+
+## v1.10.0
+
+### Bug Fixes
+
+- apps showed multiple times if user is in multiple groups ([641bbc9](https://github.com/pocket-id/pocket-id/commit/641bbc935191bad8afbfec90943fc3e9de7a0cb6) by @stonith404)
+
+### Features
+
+- redesigned sidebar with administrative dropdown ([#881](https://github.com/pocket-id/pocket-id/pull/881) by @kmendell)
+
+### Other
+
+- update AAGUIDs ([#885](https://github.com/pocket-id/pocket-id/pull/885) by @github-actions[bot])
+- bump sveltekit to 2.36.3 and devalue to 5.3.2 ([#889](https://github.com/pocket-id/pocket-id/pull/889) by @kmendell)
+- add missing translations ([#884](https://github.com/pocket-id/pocket-id/pull/884) by @savely-krasovsky)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.9.1...v1.10.0
+
+## v1.9.1
+
+### Bug Fixes
+
+- sqlite migration drops allowed user groups ([d6d1a4c](https://github.com/pocket-id/pocket-id/commit/d6d1a4ced23886f255a9c2048d19ad3599a17f26) by @stonith404)
+
+### Other
+
+- add no tx wrap to unit tests ([51222f5](https://github.com/pocket-id/pocket-id/commit/51222f5607a172c67028d821ec2648be53e5776c) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.9.0...v1.9.1
+
+## v1.9.0
+
+### Bug Fixes
+
+- don't force uuid for client id in postgres ([2ffc6ba](https://github.com/pocket-id/pocket-id/commit/2ffc6ba42af4742a13b77543142b66b3e826ab88) by @stonith404)
+- sort order incorrect for apps when using postgres ([d0392d2](https://github.com/pocket-id/pocket-id/commit/d0392d25edcaa5f3c7da2aad70febf63b47763fa) by @stonith404)
+- ensure SQLite has a writable temporary directory ([#876](https://github.com/pocket-id/pocket-id/pull/876) by @ItalyPaleAle)
+
+### Features
+
+- support automatic db migration rollbacks ([#874](https://github.com/pocket-id/pocket-id/pull/874) by @stonith404)
+
+### Other
+
+- add postgres down migration to 20250822000000 ([63db4d5](https://github.com/pocket-id/pocket-id/commit/63db4d51208af62bf960a5b4ce88674281ecb01d) by @stonith404)
+- fix postgres e2e tests ([#877](https://github.com/pocket-id/pocket-id/pull/877) by @stonith404)
+- fix playwright browsers not installed ([8999173](https://github.com/pocket-id/pocket-id/commit/8999173aa00e43ea6edac38c5637f4cbaf032c32) by @stonith404)
+- use TEXT instead of VARCHAR for client ID ([654593b](https://github.com/pocket-id/pocket-id/commit/654593b4b602c9b3d9d45e500fb5c088ad58b2ee) by @stonith404)
+- use matrix for e2e tests ([c1e515a](https://github.com/pocket-id/pocket-id/commit/c1e515a05fe584b17f7f1485a598a32e168d83a8) by @stonith404)
+- bump golang.org/x/oauth2 from 0.26.0 to 0.27.0 in /backend in the go_modules group across 1 directory ([#879](https://github.com/pocket-id/pocket-id/pull/879) by @dependabot[bot])
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.8.1...v1.9.0
+
+## v1.8.1
+
+### Bug Fixes
+
+- wrong column type for reauthentication tokens in Postgres ([#869](https://github.com/pocket-id/pocket-id/pull/869) by @ItalyPaleAle)
+- migration clears allowed users groups ([5971bfb](https://github.com/pocket-id/pocket-id/commit/5971bfbfa66ecfebf2b1c08d34fcbd8c18cdc046) by @stonith404)
+
+### Other
+
+- update issue template ([#870](https://github.com/pocket-id/pocket-id/pull/870) by @ItalyPaleAle)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.8.0...v1.8.1
+
+## v1.8.0
+
+### Bug Fixes
+
+- non admin users can't revoke oidc client but see edit link ([0e44f24](https://github.com/pocket-id/pocket-id/commit/0e44f245afcdf8179bf619613ca9ef4bffa176ca) by @stonith404)
+- ignore client secret if client is public ([#836](https://github.com/pocket-id/pocket-id/pull/836) by @James18232)
+- bump rollup from 4.45.3 to 4.46.3 ([#845](https://github.com/pocket-id/pocket-id/pull/845) by @gepbird)
+- delete webauthn session after login to prevent replay attacks ([fe003b9](https://github.com/pocket-id/pocket-id/commit/fe003b927ce7772692439992860c804de89ce424) by @stonith404)
+- move audit log call before TX is committed ([#854](https://github.com/pocket-id/pocket-id/pull/854) by @ItalyPaleAle)
+- for one-time access tokens and signup tokens, pass TTLs instead of absolute expiration date ([#855](https://github.com/pocket-id/pocket-id/pull/855) by @ItalyPaleAle)
+- authorization can't be revoked ([0aab3f3](https://github.com/pocket-id/pocket-id/commit/0aab3f3c7ad8c1b14939de3ded60c9f201eab8fc) by @stonith404)
+- ferated identities can't be cleared ([24e2742](https://github.com/pocket-id/pocket-id/commit/24e274200fe4002d01c58cc3fa74094b598d7599) by @stonith404)
+- oidc client advanced options color ([fc0c99a](https://github.com/pocket-id/pocket-id/commit/fc0c99a232b0efb1a5b5d2c551102418b1080293) by @stonith404)
+- enable foreign key check for sqlite ([#863](https://github.com/pocket-id/pocket-id/pull/863) by @stonith404)
+
+### Features
+
+- display all accessible oidc clients in the dashboard ([#832](https://github.com/pocket-id/pocket-id/pull/832) by @stonith404)
+- login code font change ([#851](https://github.com/pocket-id/pocket-id/pull/851) by @James18232)
+- add option to OIDC client to require re-authentication ([#747](https://github.com/pocket-id/pocket-id/pull/747) by @MorrisMorrison)
+- add default user groups and claims for new users ([#812](https://github.com/pocket-id/pocket-id/pull/812) by @zeedif)
+- allow custom client IDs ([#864](https://github.com/pocket-id/pocket-id/pull/864) by @stonith404)
+
+### Other
+
+- update AAGUIDs ([#826](https://github.com/pocket-id/pocket-id/pull/826) by @github-actions[bot])
+- update deps and Go 1.25 ([#833](https://github.com/pocket-id/pocket-id/pull/833) by @ItalyPaleAle)
+- update AAGUIDs ([#844](https://github.com/pocket-id/pocket-id/pull/844) by @github-actions[bot])
+- add Korean files ([d77d8eb](https://github.com/pocket-id/pocket-id/commit/d77d8eb0680061ef141e16f36b30ab679553a3ea) by @kmendell)
+- use proper async calls for cleanupBackend function ([#846](https://github.com/pocket-id/pocket-id/pull/846) by @kmendell)
+- strip debug symbol from backend binary ([#856](https://github.com/pocket-id/pocket-id/pull/856) by @maximerobine)
+- change alternative sign in methods text ([c51265d](https://github.com/pocket-id/pocket-id/commit/c51265dafb4c0344456dc55fa5a395dfb0e1f5ca) by @stonith404)
+- run formatter ([2c122d4](https://github.com/pocket-id/pocket-id/commit/2c122d413d07e4dd8c8551676ad9d8dc433328ee) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.7.0...v1.8.0
+
+## v1.7.0
+
+### Bug Fixes
+
+- set input type 'email' for email-based login ([#776](https://github.com/pocket-id/pocket-id/pull/776) by @ItalyPaleAle)
+- delete WebAuthn registration session after use ([#783](https://github.com/pocket-id/pocket-id/pull/783) by @ItalyPaleAle)
+- admins can not delete or disable their own account ([f0c144c](https://github.com/pocket-id/pocket-id/commit/f0c144c51c635bc348222a00d3bc88bc4e0711ef) by @kmendell)
+- authorization animation not working ([9ac5d51](https://github.com/pocket-id/pocket-id/commit/9ac5d5118710cad59c8c4ce7cef7ab09be3de664) by @stonith404)
+- custom claims input suggestions instantly close after opening ([4d59e72](https://github.com/pocket-id/pocket-id/commit/4d59e7286666480e20c728787a95e82513509240) by @stonith404)
+
+### Features
+
+- Support OTel and JSON for logs (via log/slog) ([#760](https://github.com/pocket-id/pocket-id/pull/760) by @ItalyPaleAle)
+- add support for `code_challenge_methods_supported` ([#794](https://github.com/pocket-id/pocket-id/pull/794) by @kmendell)
+- support reading secret env vars from \_FILE ([#799](https://github.com/pocket-id/pocket-id/pull/799) by @ItalyPaleAle)
+- add robots.txt to block indexing ([#806](https://github.com/pocket-id/pocket-id/pull/806) by @Etienne-bdt)
+- user application dashboard ([#727](https://github.com/pocket-id/pocket-id/pull/727) by @kmendell)
+
+### Other
+
+- add Ukrainian files ([51b73c9](https://github.com/pocket-id/pocket-id/commit/51b73c9c3162f956ac8bf5de54fad03ec6c18bb2) by @kmendell)
+- bump form-data from 4.0.1 to 4.0.4 in /frontend in the npm_and_yarn group across 1 directory ([#771](https://github.com/pocket-id/pocket-id/pull/771) by @dependabot[bot])
+- bump axios from 1.10.0 to 1.11.0 in /frontend in the npm_and_yarn group across 1 directory ([#777](https://github.com/pocket-id/pocket-id/pull/777) by @dependabot[bot])
+- add Vietnamese files ([60f0b28](https://github.com/pocket-id/pocket-id/commit/60f0b280767ace788409de87a7e9d7928f200bf0) by @kmendell)
+- rename glass-row-item to passkey-row ([c359b5b](https://github.com/pocket-id/pocket-id/commit/c359b5be065887b7526463adf9f349b9d586b75c) by @kmendell)
+- update dependencies and fix zod/4 import path ([ffed465](https://github.com/pocket-id/pocket-id/commit/ffed465f09e174c969fce23674c68ecbd482a1ce) by @kmendell)
+- update dependencies and fix zod/4 import path ([f3c6521](https://github.com/pocket-id/pocket-id/commit/f3c6521f2be633b107eaf0d1839db37b17d60638) by @kmendell)
+- fix federated credentials type error ([56ee7d9](https://github.com/pocket-id/pocket-id/commit/56ee7d946fc3cad1ed8a94f3665d393de4d8b81e) by @kmendell)
+- update Vietnamese display name ([12a7a6a](https://github.com/pocket-id/pocket-id/commit/12a7a6a5c5bec4f209260b90fc06e2e2201aecdf) by @kmendell)
+- complete conversion of log calls to slog ([#787](https://github.com/pocket-id/pocket-id/pull/787) by @ItalyPaleAle)
+- additional logs for database connections ([#813](https://github.com/pocket-id/pocket-id/pull/813) by @ItalyPaleAle)
+- use reflection to mark file based env variables ([#815](https://github.com/pocket-id/pocket-id/pull/815) by @stonith404)
+- switch from npm to pnpm ([#786](https://github.com/pocket-id/pocket-id/pull/786) by @kmendell)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.6.4...v1.7.0
+
+## v1.6.4
+
+### Bug Fixes
+
+- migration fails on postgres ([#762](https://github.com/pocket-id/pocket-id/pull/762) by @ItalyPaleAle)
+
+### Other
+
+- remove labels from issue templates ([4c76de4](https://github.com/pocket-id/pocket-id/commit/4c76de45ed24ae899dfa35d96a87fec2d22a2a2a) by @kmendell)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.6.3...v1.6.4
+
+## v1.6.3
+
+### Bug Fixes
+
+- allow passkey names up to 50 characters ([b03e91b](https://github.com/pocket-id/pocket-id/commit/b03e91b6530c2393ad20ac49aa2cb2b4962651b2) by @kmendell)
+- use object-contain for images on oidc-client list ([d3bc179](https://github.com/pocket-id/pocket-id/commit/d3bc1797b65ec8bc9201c55d06f3612093f3a873) by @kmendell)
+- ensure user inputs are normalized ([#724](https://github.com/pocket-id/pocket-id/pull/724) by @ItalyPaleAle)
+- use user-agent for identifying known device signins ([ef1d599](https://github.com/pocket-id/pocket-id/commit/ef1d5996624fc534190f80a26f2c48bbad206f49) by @kmendell)
+- show rename and delete buttons for passkeys without hovering over the row ([2952b15](https://github.com/pocket-id/pocket-id/commit/2952b1575542ecd0062fe740e2d6a3caad05190d) by @kmendell)
+
+### Other
+
+- use issue types for new issues ([db94f81](https://github.com/pocket-id/pocket-id/commit/db94f8193784d2f02b588aa7d2295716f00eea80) by @kmendell)
+- use correct svelte 5 syntax for signup token modal ([f145903](https://github.com/pocket-id/pocket-id/commit/f145903eb09a5b22647694bf8483559197e1663c) by @kmendell)
+- upgrade dependencies ([#752](https://github.com/pocket-id/pocket-id/pull/752) by @kmendell)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.6.2...v1.6.3
+
+## v1.6.2
+
+### Bug Fixes
+
+- login failures on Postgres when IP is null ([#737](https://github.com/pocket-id/pocket-id/pull/737) by @ItalyPaleAle)
+- ensure confirmation dialog shows on top of other components ([f103a54](https://github.com/pocket-id/pocket-id/commit/f103a547904070c5b192e519c8b5a8fed9d80e96) by @kmendell)
+
+### Other
+
+- update AAGUIDs ([#729](https://github.com/pocket-id/pocket-id/pull/729) by @github-actions[bot])
+- Fix inconsistent punctuation marks for the language name of zh-TW ([#731](https://github.com/pocket-id/pocket-id/pull/731) by @xlionjuan)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.6.1...v1.6.2
+
+## v1.6.1
+
+### Other
+
+- use `latest-distroless` tag for latest distroless images ([f565c70](https://github.com/pocket-id/pocket-id/commit/f565c702e57c390e079de258fcd46239af26d96e) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.6.0...v1.6.1
+
+## v1.6.0
+
+### Bug Fixes
+
+- add missing error check in initial user setup ([fceb6fa](https://github.com/pocket-id/pocket-id/commit/fceb6fa7b4701a3645c4c2353bcd108b15d69ded) by @stonith404)
+- app config forms not updating with latest values ([#696](https://github.com/pocket-id/pocket-id/pull/696) by @kmendell)
+- auth fails when client IP is empty on Postgres ([#695](https://github.com/pocket-id/pocket-id/pull/695) by @ItalyPaleAle)
+- token introspection authentication not handled correctly ([#704](https://github.com/pocket-id/pocket-id/pull/704) by @stonith404)
+- allow profile picture update even if "allow own account edit" enabled ([9872608](https://github.com/pocket-id/pocket-id/commit/9872608d61a486f7b775f314d9392e0620bcd891) by @stonith404)
+- support non UTF-8 LDAP IDs ([#714](https://github.com/pocket-id/pocket-id/pull/714) by @stonith404)
+- linter issues ([#719](https://github.com/pocket-id/pocket-id/pull/719) by @ItalyPaleAle)
+- actually fix linter issues ([#720](https://github.com/pocket-id/pocket-id/pull/720) by @ItalyPaleAle)
+- show friendly name in user group selection ([5c9e504](https://github.com/pocket-id/pocket-id/commit/5c9e504291b3bffe947bcbe907701806e301d1fe) by @stonith404)
+- keep sidebar in settings sticky ([e46f60a](https://github.com/pocket-id/pocket-id/commit/e46f60ac8d6944bcea54d0708af1950d98f66c3c) by @stonith404)
+- custom claims input suggestions flickering ([49f1ab2](https://github.com/pocket-id/pocket-id/commit/49f1ab2f75df97d551fff5acbadcd55df74af617) by @stonith404)
+
+### Features
+
+- enhance language selection message and add translation contribution link ([be52660](https://github.com/pocket-id/pocket-id/commit/be526602273c1689cb4057ca96d4214e7f817d1d) by @stonith404)
+- encrypt private keys saved on disk and in database ([#682](https://github.com/pocket-id/pocket-id/pull/682) by @ItalyPaleAle)
+- add "key-rotate" command ([#709](https://github.com/pocket-id/pocket-id/pull/709) by @ItalyPaleAle)
+- distroless container additional variant + healthcheck command ([#716](https://github.com/pocket-id/pocket-id/pull/716) by @ItalyPaleAle)
+- add support for OAuth 2.0 Authorization Server Issuer Identification ([bf04256](https://github.com/pocket-id/pocket-id/commit/bf042563e997d57bb087705a5789fd72ffbed467) by @stonith404)
+
+### Other
+
+- use github.com/jinzhu/copier for MapStruct ([#698](https://github.com/pocket-id/pocket-id/pull/698) by @ItalyPaleAle)
+- add CODEOWNERS file ([2ecc1ab](https://github.com/pocket-id/pocket-id/commit/2ecc1abbad5899823fdcda60d0df0c773cd1bb2e) by @kmendell)
+- update CODEOWNERS to be global ([459a4fd](https://github.com/pocket-id/pocket-id/commit/459a4fd727e9b64f2c4eb9da2d1c096aac8c4fec) by @kmendell)
+- use correct team name for codeowners ([3a29027](https://github.com/pocket-id/pocket-id/commit/3a2902789efa0c22f60e3b04c49c1a2ca131a5f9) by @kmendell)
+- run formatter ([857b9cc](https://github.com/pocket-id/pocket-id/commit/857b9cc864fd77ed93346c46cf1f97b896e112f2) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.5.0...v1.6.0
+
+## v1.5.0
+
+### Bug Fixes
+
+- remove duplicate request logging ([#678](https://github.com/pocket-id/pocket-id/pull/678) by @ryankask)
+- error page flickering after sign out ([1a77bd9](https://github.com/pocket-id/pocket-id/commit/1a77bd9914ea01e445ff3d6e116c9ed3bcfbf153) by @stonith404)
+- users can't be updated by admin if self account editing is disabled ([29cb551](https://github.com/pocket-id/pocket-id/commit/29cb5513a03d1a9571969c8a42deec9b2bdee037) by @stonith404)
+- less noisy logging for certain GET requests ([#681](https://github.com/pocket-id/pocket-id/pull/681) by @11notes)
+- margin of user sign up description ([052ac00](https://github.com/pocket-id/pocket-id/commit/052ac008c3a8c910d1ce79ee99b2b2f75e4090f4) by @stonith404)
+- improve accent color picker disabled state ([d976bf5](https://github.com/pocket-id/pocket-id/commit/d976bf5965eda10e3ecb71821c23e93e5d712a02) by @stonith404)
+- double double full stops for certain error messages ([d070b9a](https://github.com/pocket-id/pocket-id/commit/d070b9a778d7d1a51f2fa62d003f2331a96d6c91) by @stonith404)
+
+### Documentation
+
+- clarify confusing user update logic ([1fdb058](https://github.com/pocket-id/pocket-id/commit/1fdb058386a175107c5d28eb2e59eab1954756ad) by @stonith404)
+
+### Features
+
+- self-service user signup ([#672](https://github.com/pocket-id/pocket-id/pull/672) by @kmendell)
+- redact sensitive app config variables if set with env variable ([ba61cdb](https://github.com/pocket-id/pocket-id/commit/ba61cdba4eb3d5659f3ae6b6c21249985c0aa630) by @stonith404)
+- improve initial admin creation workflow ([287314f](https://github.com/pocket-id/pocket-id/commit/287314f01644e42ddb2ce1b1115bd14f2f0c1768) by @stonith404)
+
+### Other
+
+- add formatter to Playwright tests ([73e7e0b](https://github.com/pocket-id/pocket-id/commit/73e7e0b1c548f322e6a646cc43ec069cc04132c2) by @stonith404)
+- fix e2e tests ([4b82975](https://github.com/pocket-id/pocket-id/commit/4b829757b24149f56a57d3e6574018c162367843) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.4.1...v1.5.0
+
+## v1.4.1
+
+### Bug Fixes
+
+- app not starting if UI config is disabled and Postgres is used ([7d36bda](https://github.com/pocket-id/pocket-id/commit/7d36bda769e25497dec6b76206a4f7e151b0bd72) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.4.0...v1.4.1
+
+## v1.4.0
+
+### Bug Fixes
+
+- allow images with uppercase file extension ([1bcb50e](https://github.com/pocket-id/pocket-id/commit/1bcb50edc335886dd722a4c69960c48cc3cd1687) by @stonith404)
+- reduce duration of animations on login and signin page ([#648](https://github.com/pocket-id/pocket-id/pull/648) by @ItalyPaleAle)
+- center oidc client images if they are smaller than the box ([946c534](https://github.com/pocket-id/pocket-id/commit/946c534b0877a074a6b658060f9af27e4061397c) by @stonith404)
+- explicitly cache images to prevent unexpected behavior ([2e5d268](https://github.com/pocket-id/pocket-id/commit/2e5d2687982186c12e530492292d49895cb6043a) by @stonith404)
+- use inline style for dynamic background image URL instead of Tailwind class ([bef77ac](https://github.com/pocket-id/pocket-id/commit/bef77ac8dca2b98b6732677aaafbc28f79d00487) by @stonith404)
+
+### Features
+
+- auto-focus on the login buttons ([#647](https://github.com/pocket-id/pocket-id/pull/647) by @ItalyPaleAle)
+- use icon instead of text on application image update hover state ([215531d](https://github.com/pocket-id/pocket-id/commit/215531d65c6683609b0b4a5505fdb72696fdb93e) by @stonith404)
+- ui accent colors ([#643](https://github.com/pocket-id/pocket-id/pull/643) by @kmendell)
+- allow setting unix socket mode ([#661](https://github.com/pocket-id/pocket-id/pull/661) by @CnTeng)
+- location filter for global audit log ([#662](https://github.com/pocket-id/pocket-id/pull/662) by @kmendell)
+- configurable local ipv6 ranges for audit log ([#657](https://github.com/pocket-id/pocket-id/pull/657) by @kmendell)
+
+### Other
+
+- Update spelling and grammar in en.json ([#650](https://github.com/pocket-id/pocket-id/pull/650) by @amazingca)
+- run formatter ([fd3c76f](https://github.com/pocket-id/pocket-id/commit/fd3c76ffa37969b13fea43a625dc2ea5a7027692) by @stonith404)
+- run formatter ([5814549](https://github.com/pocket-id/pocket-id/commit/5814549cbe80e926c9f1b9abf6ee9f3315e84154) by @stonith404)
+- only build required binaries for `next` image ([3717a66](https://github.com/pocket-id/pocket-id/commit/3717a663d96331b6b266d91c57abc2ba94513ce9) by @stonith404)
+- cancel `build-next` action if new one starts ([c77167d](https://github.com/pocket-id/pocket-id/commit/c77167df462bed512c7d3275aade6e2c5e7d180d) by @stonith404)
+- use `v1` tag in example `docker-compose.yml` ([c8eb034](https://github.com/pocket-id/pocket-id/commit/c8eb034c492001deb3a47dd3f3c2a366f784bb3c) by @stonith404)
+- remove unused crypto util ([d5928f6](https://github.com/pocket-id/pocket-id/commit/d5928f6fea0268b8c64e7b5dba5218208f269c37) by @stonith404)
+- add configuration for backend hot reloading ([481df3b](https://github.com/pocket-id/pocket-id/commit/481df3bcb9816df27feba71853f02214e9b9809c) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.3.1...v1.4.0
+
+## v1.3.1
+
+### Bug Fixes
+
+- change timestamp of `client_credentials.sql` migration ([2935236](https://github.com/pocket-id/pocket-id/commit/2935236acee9c78c2fe6787ec8b5f53ae0eca047) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.3.0...v1.3.1
+
+## v1.3.0
+
+### Bug Fixes
+
+- don't load app config and user on every route change ([bdcef60](https://github.com/pocket-id/pocket-id/commit/bdcef60cab6a61e1717661e918c42e3650d23fee) by @stonith404)
+- UI config overridden by env variables don't apply on first start ([5e9096e](https://github.com/pocket-id/pocket-id/commit/5e9096e328741ba2a0e03835927fe62e6aea2a89) by @stonith404)
+- OIDC client image can't be deleted ([61b62d4](https://github.com/pocket-id/pocket-id/commit/61b62d461200c1359a16c92c9c62530362a4785c) by @stonith404)
+- use full width for audit log filters ([575b2f7](https://github.com/pocket-id/pocket-id/commit/575b2f71e9f1ff9c4f6fd411b136676c213b7201) by @stonith404)
+- misleading text for disable animations option ([657a51f](https://github.com/pocket-id/pocket-id/commit/657a51f7ed8a77e8a937971032091058aacfded6) by @stonith404)
+
+### Documentation
+
+- fix pagination API docs ([ea4e486](https://github.com/pocket-id/pocket-id/commit/ea4e48680c12f433900246240f56b440d9bbea4a) by @stonith404)
+- remove difficult to maintain OpenAPI properties ([3cc82d8](https://github.com/pocket-id/pocket-id/commit/3cc82d8522b2e1107a312d9ff89683af99af76fd) by @stonith404)
+
+### Features
+
+- add API endpoint for user authorized clients ([d217083](https://github.com/pocket-id/pocket-id/commit/d217083059120171d5c555b09eefe6ba3c8a8d42) by @stonith404)
+- add unix socket support ([#615](https://github.com/pocket-id/pocket-id/pull/615) by @CnTeng)
+- JWT bearer assertions for client authentication ([#566](https://github.com/pocket-id/pocket-id/pull/566) by @ItalyPaleAle)
+- oidc client data preview ([#624](https://github.com/pocket-id/pocket-id/pull/624) by @kmendell)
+- new color theme for the UI ([97f7326](https://github.com/pocket-id/pocket-id/commit/97f7326da40265a954340d519661969530f097a0) by @stonith404)
+- allow introspection and device code endpoints to use Federated Client Credentials ([#640](https://github.com/pocket-id/pocket-id/pull/640) by @ItalyPaleAle)
+
+### Other
+
+- run fomratter ([dc5d7bb](https://github.com/pocket-id/pocket-id/commit/dc5d7bb2f3eae4759760c8243562fae0a56be374) by @stonith404)
+- add Danish language files ([b650d6d](https://github.com/pocket-id/pocket-id/commit/b650d6d423ce5ee4676bb0c214b1f23cc0913cde) by @stonith404)
+- add Traditional Chinese files ([31a803b](https://github.com/pocket-id/pocket-id/commit/31a803b2430ee1926a857f586a698ac54c29f9f6) by @stonith404)
+- add workflow for building 'next' docker image ([#633](https://github.com/pocket-id/pocket-id/pull/633) by @kmendell)
+- upgrade to Zod v4 ([#623](https://github.com/pocket-id/pocket-id/pull/623) by @stonith404)
+- add missing permission ([f403eed](https://github.com/pocket-id/pocket-id/commit/f403eed12cec0ea6f548d9fa79d20727bf06cf64) by @stonith404)
+- add missing attestions permission ([b25e95f](https://github.com/pocket-id/pocket-id/commit/b25e95fc4aed239f0d85771c28fe2cbacdc94112) by @stonith404)
+- update AAGUIDs ([#639](https://github.com/pocket-id/pocket-id/pull/639) by @github-actions[bot])
+- upgrade to Shadcn v1.0.0 ([242d87a](https://github.com/pocket-id/pocket-id/commit/242d87a54bb9e85434e58349b029bbe5d10d9deb) by @stonith404)
+- add docs link and rename to Federated Client Credentials ([#636](https://github.com/pocket-id/pocket-id/pull/636) by @ItalyPaleAle)
+- add branch check to release script ([a09d529](https://github.com/pocket-id/pocket-id/commit/a09d529027472ce4f77211dbe0c090795a558dab) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.2.0...v1.3.0
+
+## v1.2.0
+
+### Bug Fixes
+
+- show LAN for auditlog location for internal networks ([b874681](https://github.com/pocket-id/pocket-id/commit/b8746818240fde052e6f3b5db5c3355d7bbfcbda) by @kmendell)
+- small fixes in analytics_job ([#582](https://github.com/pocket-id/pocket-id/pull/582) by @ItalyPaleAle)
+- run jobs at interval instead of specific time ([#585](https://github.com/pocket-id/pocket-id/pull/585) by @ItalyPaleAle)
+- don't use TOFU for logout callback URLs ([#588](https://github.com/pocket-id/pocket-id/pull/588) by @ItalyPaleAle)
+- clear default app config variables from database ([decf8ec](https://github.com/pocket-id/pocket-id/commit/decf8ec70b5f6a69fe201d6e4ad60ee62e374ad0) by @stonith404)
+- allow users to update their locale even when own account update disabled ([6c00aaa](https://github.com/pocket-id/pocket-id/commit/6c00aaa3efa75c76d340718698a0f4556e8de268) by @stonith404)
+- fallback to primary language if no translation available for specific country ([2440379](https://github.com/pocket-id/pocket-id/commit/2440379cd11b4a6da7c52b122ba8f49d7c72ce1d) by @stonith404)
+- whitelist authorization header for CORS ([b9489b5](https://github.com/pocket-id/pocket-id/commit/b9489b5e9a32a2a3f54d48705e731a7bcf188d20) by @stonith404)
+- improve spacing on auth screens ([04fcf11](https://github.com/pocket-id/pocket-id/commit/04fcf1110e97b42dc5f0c20e169c569075d1e797) by @stonith404)
+- page scrolls up on form submisssion ([31ad904](https://github.com/pocket-id/pocket-id/commit/31ad904367e53dd47a15abcce5402dfe84828a14) by @stonith404)
+
+### Documentation
+
+- use https in `.env.example` ([c24a554](https://github.com/pocket-id/pocket-id/commit/c24a5546a5254d56f58658a2d3d74b5431508b67) by @stonith404)
+
+### Features
+
+- auto detect callback url ([#583](https://github.com/pocket-id/pocket-id/pull/583) by @kmendell)
+
+### Other
+
+- adapt unit test for new app config default value behavior ([00259f8](https://github.com/pocket-id/pocket-id/commit/00259f88195e56dcb3e0c2bb3c53a2f2c489d382) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.1.0...v1.2.0
+
+## v1.1.0
+
+### Bug Fixes
+
+- use ldapAttributeUserUsername for finding group members ([#565](https://github.com/pocket-id/pocket-id/pull/565) by @kmendell)
+- run user group count inside a transaction ([f03b80f](https://github.com/pocket-id/pocket-id/commit/f03b80f9d7f2529d8cef23ca6a742a914a4ec883) by @stonith404)
+
+### Features
+
+- require user verification for passkey sign in ([68e4b67](https://github.com/pocket-id/pocket-id/commit/68e4b67bd212e31ecc20277bfd293c94bf7f3642) by @stonith404)
+- show allowed group count on oidc client list ([#567](https://github.com/pocket-id/pocket-id/pull/567) by @kmendell)
+- add daily heartbeat request for counting Pocket ID instances ([#578](https://github.com/pocket-id/pocket-id/pull/578) by @stonith404)
+
+### Other
+
+- update AAGUIDs ([#576](https://github.com/pocket-id/pocket-id/pull/576) by @github-actions[bot])
+- tag container images with v{major} ([#577](https://github.com/pocket-id/pocket-id/pull/577) by @maximbaz)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v1.0.0...v1.1.0
+
+## v1.0.0
+
+### Bug Fixes
+
+- custom logo not correctly loaded if UI configuration is disabled ([bf710ae](https://github.com/pocket-id/pocket-id/commit/bf710aec5625c9dcb43c83d920318a036a135bae) by @stonith404)
+- animation speed set to max of 300ms ([c726c16](https://github.com/pocket-id/pocket-id/commit/c726c1621b8bd88b20cb05263f6d10888f0af8e2) by @kmendell)
+- authorize page doesn't load ([c3a03db](https://github.com/pocket-id/pocket-id/commit/c3a03db8b0f87cddc927481cfad2ccc391f98869) by @stonith404)
+- ldap tests ([4dc0b2f](https://github.com/pocket-id/pocket-id/commit/4dc0b2f37f9a57ba1c7ea084dc2a713f283d1b14) by @kmendell)
+- remove curly bracket from user group URL ([5fa15f6](https://github.com/pocket-id/pocket-id/commit/5fa15f60984a8f2a02f15900860c3a3097032e1b) by @stonith404)
+- remove nested button in user group list ([f57c8d3](https://github.com/pocket-id/pocket-id/commit/f57c8d347e127027378aad8831a8e4dfebfef060) by @stonith404)
+- add back month and year selection for date picker ([6c35570](https://github.com/pocket-id/pocket-id/commit/6c35570e78813ca6af1bae6a0374d7483bff9824) by @stonith404)
+- show correct app name on sign out page ([131f470](https://github.com/pocket-id/pocket-id/commit/131f470757044fddd0989a76e9dc9e310f19819c) by @stonith404)
+- use pointer cursor for menu items ([f820fc8](https://github.com/pocket-id/pocket-id/commit/f820fc830161499edb0da2df334e4e473d5825ae) by @stonith404)
+- use same color as title for description in alert ([e19b33f](https://github.com/pocket-id/pocket-id/commit/e19b33fc2e2b9dd149da1f9351aca2e839ffae04) by @stonith404)
+- trim whitespaces from string inputs ([#537](https://github.com/pocket-id/pocket-id/pull/537) by @stonith404)
+
+### Documentation
+
+- adapt contribution guide ([cbe7aa6](https://github.com/pocket-id/pocket-id/commit/cbe7aa6eecf0ba73cfe7f05db90ce63d893826ec) by @stonith404)
+
+### Features
+
+- improve buttons styling ([c37386f](https://github.com/pocket-id/pocket-id/commit/c37386f8b2f2c64bd9e7c437879a2217846852b5) by @stonith404)
+
+### Other
+
+- update AAGUIDs ([#523](https://github.com/pocket-id/pocket-id/pull/523) by @github-actions[bot])
+- remove old DB env variables, and jwk migrations logic ([#529](https://github.com/pocket-id/pocket-id/pull/529) by @kmendell)
+- switch SQLite driver to pure-Go implementation ([#530](https://github.com/pocket-id/pocket-id/pull/530) by @ItalyPaleAle)
+- flaky unit test in db_bootstrap_test ([#532](https://github.com/pocket-id/pocket-id/pull/532) by @ItalyPaleAle)
+- update options API for simplewebauthn ([#543](https://github.com/pocket-id/pocket-id/pull/543) by @RealOrangeOne)
+- update AAGUIDs ([#547](https://github.com/pocket-id/pocket-id/pull/547) by @github-actions[bot])
+- add Polish translations ([#554](https://github.com/pocket-id/pocket-id/pull/554) by @mikolaj92)
+- serve the static frontend trough the backend ([f8a7467](https://github.com/pocket-id/pocket-id/commit/f8a7467ec0e939f90d19211a0a0efc5e17a58127) by @stonith404)
+- update release pipelines ([35b227c](https://github.com/pocket-id/pocket-id/commit/35b227cd17efa1ff37d76aee09d2f0081a69df68) by @ItalyPaleAle)
+- replace create-one-time-access-token script with in-app functionality ([cb2a9f9](https://github.com/pocket-id/pocket-id/commit/cb2a9f9f7d2cd7cd19ecabbcb883ac6c8118c4aa) by @ItalyPaleAle)
+- address linter's complaint in 1.0 branch ([3896b7b](https://github.com/pocket-id/pocket-id/commit/3896b7bb3b30ff8887a30d95778829533d62ed40) by @ItalyPaleAle)
+- some clean-up in OIDC service and controller ([b71c84c](https://github.com/pocket-id/pocket-id/commit/b71c84c355c8feaadd7799cc54ca444ef8abce43) by @ItalyPaleAle)
+- remove pocket-id binary ([b2e8993](https://github.com/pocket-id/pocket-id/commit/b2e89934de61d5ec4df85a9d5186bb0be6f48321) by @kmendell)
+- add pocket-id to .gitignore ([8326bfd](https://github.com/pocket-id/pocket-id/commit/8326bfd13694cf712f918510d200c7aba84d65b8) by @kmendell)
+- add `.well-known` to development reverse proxy ([05b443d](https://github.com/pocket-id/pocket-id/commit/05b443d984ec7758fa85720c89c2671652ac3328) by @stonith404)
+- migrate shadcn-components to Svelte 5 and TW4 ([28c8599](https://github.com/pocket-id/pocket-id/commit/28c85990baa473f6083660f21cc20ddffa58104c) by @kmendell)
+- adapt e2e tests ([ac6df53](https://github.com/pocket-id/pocket-id/commit/ac6df536ef266d58eecbbfd7c077c56f959b12ec) by @stonith404)
+- use bits-10 as selector ([21cb331](https://github.com/pocket-id/pocket-id/commit/21cb3310d66dcc6e3ad372d8873ba6e5629f3159) by @kmendell)
+- wait for network ([53f212f](https://github.com/pocket-id/pocket-id/commit/53f212fd3a22b10e8221ed8647eb26453ab8f5f9) by @kmendell)
+- move e2e tests to root of repository ([966a566](https://github.com/pocket-id/pocket-id/commit/966a566adeb5e128c0988239d06dbfb820cdce30) by @stonith404)
+- start test containers with Docker Compose ([ebcf861](https://github.com/pocket-id/pocket-id/commit/ebcf861aa682c46294d88584e60cc004e229b4e3) by @stonith404)
+- fix `.auth` path of e2e tests ([ca5e754](https://github.com/pocket-id/pocket-id/commit/ca5e754aea0a851eeb3cc044d6618c340653c189) by @stonith404)
+- move `auth.setup.ts` into `specs` folder ([9fff6ec](https://github.com/pocket-id/pocket-id/commit/9fff6ec3b61ef6bb90e8b1aef51b8e95b7d617d5) by @stonith404)
+- fix change locale test ([5b3ff7b](https://github.com/pocket-id/pocket-id/commit/5b3ff7b8798d7b2e241d3f996a1e4e37b85c0e09) by @stonith404)
+- fix lldap setup if data already seeded ([3042de2](https://github.com/pocket-id/pocket-id/commit/3042de2ce1e9e3102eea464aab4ca2e93c5aea05) by @stonith404)
+- add missing types to Playwright tests ([a65c0b3](https://github.com/pocket-id/pocket-id/commit/a65c0b3da346c5882fb4f5fee59edad32d6b5dba) by @stonith404)
+- fix e2e tests after shadcn upgrade ([869c4c5](https://github.com/pocket-id/pocket-id/commit/869c4c5871b9b33044713fa98d79786b28b2939f) by @stonith404)
+- exclude binary from project root ([0d4d538](https://github.com/pocket-id/pocket-id/commit/0d4d5386c77eb146064dcdc4feaa69709e27fbf5) by @stonith404)
+- remove unused `data.json` ([2a457ac](https://github.com/pocket-id/pocket-id/commit/2a457ac8e9bb7917a703a948501fc1edff4ad27c) by @stonith404)
+- add major flag to release script ([2793eb4](https://github.com/pocket-id/pocket-id/commit/2793eb4ebd50feb209e9e9f5f8516a3f0a15323c) by @stonith404)
+- upgrade `build-push-action` ([ed0e566](https://github.com/pocket-id/pocket-id/commit/ed0e566e99c9a66623fc7a09eaa8d9472764ecb5) by @stonith404)
+- remove default value from `TARGETARCH` in Dockerfile ([7691622](https://github.com/pocket-id/pocket-id/commit/769162227419bf379ebe39b285de76b7223c527a) by @stonith404)
+- fix subject digest in container image attestation ([31ae8ca](https://github.com/pocket-id/pocket-id/commit/31ae8cac964668eeb361bc20eceba8e2eca3623e) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.53.0...v1.0.0
+
+## v0.53.0
+
+### Bug Fixes
+
+- handle CORS correctly for endpoints that SPAs need ([#513](https://github.com/pocket-id/pocket-id/pull/513) by @stonith404)
+
+### Features
+
+- add support for `TZ` environment variable ([5e2e947](https://github.com/pocket-id/pocket-id/commit/5e2e947fe09fa881a7bbc70133a243a4baf30e90) by @stonith404)
+
+### Other
+
+- organize imports ([ba256c7](https://github.com/pocket-id/pocket-id/commit/ba256c76bc84d4acb904fcdf41728d8c9732cc48) by @stonith404)
+- add e2e LDAP tests ([#466](https://github.com/pocket-id/pocket-id/pull/466) by @kmendell)
+- remove wait for LDAP sync ([de648dd](https://github.com/pocket-id/pocket-id/commit/de648dd6daac8af51bed4fba695cc3c0e4a79039) by @stonith404)
+- run formatter ([e0db469](https://github.com/pocket-id/pocket-id/commit/e0db4695acd82246bc638745d56e935b199f98b6) by @stonith404)
+- add explicit permissions to actions ([90bdd29](https://github.com/pocket-id/pocket-id/commit/90bdd29fb67e9ffc13384b9b8ce19b76b789efc2) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.52.0...v0.53.0
+
+## v0.52.0
+
+### Bug Fixes
+
+- correctly set script permissions inside Docker container ([c55fef0](https://github.com/pocket-id/pocket-id/commit/c55fef057cdcec867af91b29968541983cd80ec0) by @stonith404)
+
+### Features
+
+- OpenTelemetry tracing and metrics ([#495](https://github.com/pocket-id/pocket-id/pull/495) by @daenney)
+- add healthz endpoint ([#494](https://github.com/pocket-id/pocket-id/pull/494) by @ItalyPaleAle)
+
+### Other
+
+- add svelte-check workflow for the frontend ([8ec2388](https://github.com/pocket-id/pocket-id/commit/8ec238826903f1daf557e8118b42c5b794c833a0) by @kmendell)
+- build frontend to include paraglide before running svelte-check ([5d78445](https://github.com/pocket-id/pocket-id/commit/5d784455014adf29f51a5b7a48b7f9f673427308) by @kmendell)
+- create a PR instead of commiting for update aaguids workflow ([364f5b3](https://github.com/pocket-id/pocket-id/commit/364f5b38b944b7c528fadb6ee0932cd0ac8d98b4) by @stonith404)
+- update AAGUIDs ([#507](https://github.com/pocket-id/pocket-id/pull/507) by @github-actions[bot])
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.51.1...v0.52.0
+
+## v0.51.1
+
+### Bug Fixes
+
+- last name still showing as required on account form ([#492](https://github.com/pocket-id/pocket-id/pull/492) by @kmendell)
+- non admin users weren't able to call the end session endpoint ([6bd6cef](https://github.com/pocket-id/pocket-id/commit/6bd6cefaa6dc571a319a6a1c2b2facc2404eadd3) by @stonith404)
+- allow LDAP users to update their locale ([0b9cbf4](https://github.com/pocket-id/pocket-id/commit/0b9cbf47e36a332cfd854aa92e761264fb3e4795) by @stonith404)
+
+### Other
+
+- bump vite from 6.2.6 to 6.3.4 in /frontend in the npm_and_yarn group across 1 directory ([#496](https://github.com/pocket-id/pocket-id/pull/496) by @dependabot[bot])
+- complete graceful shutdown implementation and add service runner ([#493](https://github.com/pocket-id/pocket-id/pull/493) by @ItalyPaleAle)
+- fix type errors ([f4c6cff](https://github.com/pocket-id/pocket-id/commit/f4c6cff4613ff986b3954403f5dd894c5fbf2dac) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.51.0...v0.51.1
+
+## v0.51.0
+
+### Bug Fixes
+
+- updating scopes of an authorized client fails with Postgres ([0a24ab8](https://github.com/pocket-id/pocket-id/commit/0a24ab80010eb5a15d99915802c6698274a5c57c) by @stonith404)
+- hide global audit log switch for non admin users ([1efd1d1](https://github.com/pocket-id/pocket-id/commit/1efd1d182dbb6190d3c7e27034426c9e48781b4a) by @stonith404)
+- return correct error message if user isn't authorized ([86d2b5f](https://github.com/pocket-id/pocket-id/commit/86d2b5f59f26cb944017826cbd8df915cdc986f1) by @stonith404)
+- do not require PKCE for public clients ([ce24372](https://github.com/pocket-id/pocket-id/commit/ce24372c571cc3b277095dc6a4107663d64f45b3) by @stonith404)
+
+### Features
+
+- new login code card position for mobile devices ([#452](https://github.com/pocket-id/pocket-id/pull/452) by @James18232)
+
+### Other
+
+- reorganize imports ([4614769](https://github.com/pocket-id/pocket-id/commit/4614769b84e6dfd9414eeeb2b347d056069beca2) by @stonith404)
+- graceful shutdown for server ([#482](https://github.com/pocket-id/pocket-id/pull/482) by @ItalyPaleAle)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.50.0...v0.51.0
+
+## v0.50.0
+
+### Bug Fixes
+
+- rootless Caddy data and configuration ([#470](https://github.com/pocket-id/pocket-id/pull/470) by @eiqnepm)
+- do not override XDG_DATA_HOME/XDG_CONFIG_HOME if they are already set ([#472](https://github.com/pocket-id/pocket-id/pull/472) by @ItalyPaleAle)
+- prevent deadlock when trying to delete LDAP users ([#471](https://github.com/pocket-id/pocket-id/pull/471) by @ItalyPaleAle)
+- pass context to methods that were missing it ([#487](https://github.com/pocket-id/pocket-id/pull/487) by @ItalyPaleAle)
+
+### Features
+
+- make family name optional ([#476](https://github.com/pocket-id/pocket-id/pull/476) by @kmendell)
+- device authorization endpoint ([#270](https://github.com/pocket-id/pocket-id/pull/270) by @kmendell)
+
+### Other
+
+- Add Simplified Chinese translation. ([#473](https://github.com/pocket-id/pocket-id/pull/473) by @Star-caorui)
+- do not force redirects to happen on the server ([#481](https://github.com/pocket-id/pocket-id/pull/481) by @ItalyPaleAle)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.49.0...v0.50.0
+
+## v0.49.0
+
+### Bug Fixes
+
+- locale change in dropdown doesn't work on first try ([60bad9e](https://github.com/pocket-id/pocket-id/commit/60bad9e9859d81c9967e6939e1ed10a65145a936) by @stonith404)
+- remove limit of 20 callback URLs ([c37a3e0](https://github.com/pocket-id/pocket-id/commit/c37a3e0ed177c3bd2b9a618d1f4b0709004478b0) by @stonith404)
+- disable animations not respected on authorize and logout page ([e571996](https://github.com/pocket-id/pocket-id/commit/e571996cb57d04232c1f47ab337ad656f48bb3cb) by @stonith404)
+- hide alternative sign in button if user is already authenticated ([4e05b82](https://github.com/pocket-id/pocket-id/commit/4e05b82f02740a4bae07cec6c6a64acd34ca0fc3) by @stonith404)
+
+### Features
+
+- add description to callback URL inputs ([eb689eb](https://github.com/pocket-id/pocket-id/commit/eb689eb56ec9eaf8b0fb1485040e26f841b9225d) by @stonith404)
+- send email to user when api key expires within 7 days ([#451](https://github.com/pocket-id/pocket-id/pull/451) by @kmendell)
+- add ability to send login code via email ([#457](https://github.com/pocket-id/pocket-id/pull/457) by @stonith404)
+- add ability to disable API key expiration email ([9122e75](https://github.com/pocket-id/pocket-id/commit/9122e75101ad39a40135ccf931eb2bfd351b5db6) by @stonith404)
+
+### Other
+
+- add kmendell to `FUNDING.yml` ([e21ee8a](https://github.com/pocket-id/pocket-id/commit/e21ee8a871134863e0834c32a58df3578dbd8289) by @stonith404)
+- setup caching and improve ci job performance ([#465](https://github.com/pocket-id/pocket-id/pull/465) by @kmendell)
+- fix type errors ([2597907](https://github.com/pocket-id/pocket-id/commit/2597907578ab4adffd32bf708580b1309c69d917) by @stonith404)
+- fix typo in key ([55273d6](https://github.com/pocket-id/pocket-id/commit/55273d68c93a2470bba95b0b06ce430e17c0ddeb) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.48.0...v0.49.0
+
+## v0.48.0
+
+### Bug Fixes
+
+- profile picture empty for users without first or last name ([#449](https://github.com/pocket-id/pocket-id/pull/449) by @kmendell)
+- add "type" as reserved claim ([0111a58](https://github.com/pocket-id/pocket-id/commit/0111a58dac0342c5ac2fa25a050e8773810d2b0a) by @stonith404)
+- callback URL doesn't get rejected if it starts with a different string ([f0dce41](https://github.com/pocket-id/pocket-id/commit/f0dce41fbc5649b3a8fe65de36ca20efa521b880) by @stonith404)
+- user querying fails on global audit log page with Postgres ([84f1d5c](https://github.com/pocket-id/pocket-id/commit/84f1d5c906ec3f9a74ad3d2f36526eea847af5dd) by @stonith404)
+
+### Features
+
+- add gif support for logo and background image ([56a8b5d](https://github.com/pocket-id/pocket-id/commit/56a8b5d0c02643f869b77cf8475ddf2f9473880b) by @stonith404)
+- disable/enable users ([#437](https://github.com/pocket-id/pocket-id/pull/437) by @kmendell)
+
+### Other
+
+- bump golang.org/x/net from 0.36.0 to 0.38.0 in /backend in the go_modules group across 1 directory ([#450](https://github.com/pocket-id/pocket-id/pull/450) by @dependabot[bot])
+- add Italian ([75fbfee](https://github.com/pocket-id/pocket-id/commit/75fbfee4d8963fd3ab97d29063f527297e093069) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.47.0...v0.48.0
+
+## v0.47.0
+
+### Bug Fixes
+
+- define token type as claim for better client compatibility ([adf7458](https://github.com/pocket-id/pocket-id/commit/adf74586afb6ef9a00fb122c150b0248c5bc23f0) by @stonith404)
+
+### Features
+
+- add qrcode representation of one time link ([#436](https://github.com/pocket-id/pocket-id/pull/436) by @paulgreg)
+- disable animations setting toggle ([#442](https://github.com/pocket-id/pocket-id/pull/442) by @kmendell)
+
+### Other
+
+- bump @sveltejs/kit from 2.16.1 to 2.20.6 in /frontend in the npm_and_yarn group across 1 directory ([#443](https://github.com/pocket-id/pocket-id/pull/443) by @dependabot[bot])
+- adapt JWTs in e2e tests ([9b2d622](https://github.com/pocket-id/pocket-id/commit/9b2d622990b3f81ff5bce64043c6fe1a1e4b6f69) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.46.0...v0.47.0
+
+## v0.46.0
+
+### Bug Fixes
+
+- create reusable default profile pictures ([#406](https://github.com/pocket-id/pocket-id/pull/406) by @kmendell)
+- ensure file descriptors are closed + other bugs ([#413](https://github.com/pocket-id/pocket-id/pull/413) by @ItalyPaleAle)
+- ensure indexes on audit_logs table ([#415](https://github.com/pocket-id/pocket-id/pull/415) by @ItalyPaleAle)
+- use transactions when operations involve multiple database queries ([#392](https://github.com/pocket-id/pocket-id/pull/392) by @ItalyPaleAle)
+- use UUID for temporary file names ([ccc18d7](https://github.com/pocket-id/pocket-id/commit/ccc18d716f16a7ef1775d30982e2ba7b5ff159a6) by @stonith404)
+- add missing rollback for LDAP sync ([658a9ca](https://github.com/pocket-id/pocket-id/commit/658a9ca6dd8d2304ff3639a000bab02e91ff68a6) by @stonith404)
+- ignore profile picture cache after profile picture gets updated ([4ba6893](https://github.com/pocket-id/pocket-id/commit/4ba68938dd2a631c633fcb65d8c35cb039d3f59c) by @stonith404)
+- improve LDAP error handling ([#425](https://github.com/pocket-id/pocket-id/pull/425) by @ItalyPaleAle)
+
+### Documentation
+
+- update swagger description to use markdown ([#418](https://github.com/pocket-id/pocket-id/pull/418) by @kmendell)
+
+### Features
+
+- modernize ui ([#381](https://github.com/pocket-id/pocket-id/pull/381) by @kmendell)
+- global audit log ([#320](https://github.com/pocket-id/pocket-id/pull/320) by @kmendell)
+- implement token introspection ([#405](https://github.com/pocket-id/pocket-id/pull/405) by @aksdb)
+- Added button when you don't have a passkey added. ([#426](https://github.com/pocket-id/pocket-id/pull/426) by @arne)
+
+### Other
+
+- remove cors exception from middleware as this is handled by the handler ([cf3084c](https://github.com/pocket-id/pocket-id/commit/cf3084cfa8e151c78f55a24af05dddb9d3a0fc71) by @stonith404)
+- improve czech translation strings ([#408](https://github.com/pocket-id/pocket-id/pull/408) by @jose-d)
+- bump vite from 6.2.3 to 6.2.4 in /frontend in the npm_and_yarn group across 1 directory ([#410](https://github.com/pocket-id/pocket-id/pull/410) by @dependabot[bot])
+- fix mistakes in source strings ([4627f36](https://github.com/pocket-id/pocket-id/commit/4627f365a2d7b227350087bf7f0e9c6dfde095f6) by @stonith404)
+- bump vite from 6.2.4 to 6.2.5 in /frontend in the npm_and_yarn group across 1 directory ([#417](https://github.com/pocket-id/pocket-id/pull/417) by @dependabot[bot])
+- rollback db changes with `defer` everywhere ([ce6e27d](https://github.com/pocket-id/pocket-id/commit/ce6e27d0ff3682c62f740e3c9103f515b3f16e9b) by @stonith404)
+- simplify app_config service and fix race conditions ([#423](https://github.com/pocket-id/pocket-id/pull/423) by @ItalyPaleAle)
+- bump vite from 6.2.5 to 6.2.6 in /frontend in the npm_and_yarn group across 1 directory ([#433](https://github.com/pocket-id/pocket-id/pull/433) by @dependabot[bot])
+
+### Performance Improvements
+
+- run async operations in parallel in server load functions ([1762629](https://github.com/pocket-id/pocket-id/commit/17626295964244c5582806bd0f413da2c799d5ad) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.45.0...v0.46.0
+
+## v0.45.0
+
+### Bug Fixes
+
+- use value receiver for `AuditLogData` ([cbd1bbd](https://github.com/pocket-id/pocket-id/commit/cbd1bbdf741eedd03e93598d67623c75c74b6212) by @stonith404)
+- ldap users aren't deleted if removed from ldap server ([7e65827](https://github.com/pocket-id/pocket-id/commit/7e658276f04d08a1f5117796e55d45e310204dab) by @stonith404)
+- use WAL for SQLite by default and set busy_timeout ([#388](https://github.com/pocket-id/pocket-id/pull/388) by @ItalyPaleAle)
+
+### Documentation
+
+- update .env.example to reflect the new documentation location ([#385](https://github.com/pocket-id/pocket-id/pull/385) by @PsychotherapistSam)
+
+### Features
+
+- add support for ECDSA and EdDSA keys ([#359](https://github.com/pocket-id/pocket-id/pull/359) by @ItalyPaleAle)
+
+### Other
+
+- add basic static analysis for backend ([#389](https://github.com/pocket-id/pocket-id/pull/389) by @Rich7690)
+- run linter only on backend changes ([6fa26c9](https://github.com/pocket-id/pocket-id/commit/6fa26c97be76140b58c78742ba97e1ac336c3ecb) by @stonith404)
+- fix code smells ([c9e0073](https://github.com/pocket-id/pocket-id/commit/c9e0073b6362dffc93b79f340289853ba28aa9d6) by @stonith404)
+- fix code smells ([5c198c2](https://github.com/pocket-id/pocket-id/commit/5c198c280cea4c5bf8572f34df5c84f4069d6b27) by @stonith404)
+- migrate backend linter to v2. fixed unit test workflow ([#400](https://github.com/pocket-id/pocket-id/pull/400) by @Rich7690)
+- install inlang plugins from npm ([#401](https://github.com/pocket-id/pocket-id/pull/401) by @gepbird)
+- add swagger title and version info ([#399](https://github.com/pocket-id/pocket-id/pull/399) by @kmendell)
+- add Brazilian Portuguese ([fc68cf7](https://github.com/pocket-id/pocket-id/commit/fc68cf7eb218689ce392226fca42b125fbe714e5) by @stonith404)
+- do not include test controller in production builds ([#402](https://github.com/pocket-id/pocket-id/pull/402) by @ItalyPaleAle)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.44.0...v0.45.0
+
+## v0.44.0
+
+### Bug Fixes
+
+- skip ldap objects without a valid unique id ([#376](https://github.com/pocket-id/pocket-id/pull/376) by @kmendell)
+- hash the refresh token in the DB (security) ([#379](https://github.com/pocket-id/pocket-id/pull/379) by @ItalyPaleAle)
+- stop container if Caddy, the frontend or the backend fails ([e6f5019](https://github.com/pocket-id/pocket-id/commit/e6f50191cf05a5d0ac0e0000cf66423646f1920e) by @stonith404)
+
+### Documentation
+
+- fix api routers for swag documentation ([#378](https://github.com/pocket-id/pocket-id/pull/378) by @kmendell)
+
+### Features
+
+- add OIDC refresh_token support ([#325](https://github.com/pocket-id/pocket-id/pull/325) by @kmendell)
+
+### Other
+
+- fix invalid action configuration ([edf1097](https://github.com/pocket-id/pocket-id/commit/edf1097dd3183adb25863ee0636913cf92c67877) by @stonith404)
+- skip e2e tests if the PR comes from `i18n_crowdin` ([af5b2f7](https://github.com/pocket-id/pocket-id/commit/af5b2f7913480520c4d6702356a730568f44e606) by @stonith404)
+- add Russian localization ([#371](https://github.com/pocket-id/pocket-id/pull/371) by @savely-krasovsky)
+- bump github.com/golang-jwt/jwt/v5 from 5.2.1 to 5.2.2 in /backend in the go_modules group across 1 directory ([#374](https://github.com/pocket-id/pocket-id/pull/374) by @dependabot[bot])
+- add French, Czech and German to language picker ([35766af](https://github.com/pocket-id/pocket-id/commit/35766af0556ba4bb5360c1680a892faa8b0bd3bc) by @stonith404)
+- use atomic renames for uploaded files ([#372](https://github.com/pocket-id/pocket-id/pull/372) by @ItalyPaleAle)
+- bump vite from 6.2.1 to 6.2.3 in /frontend in the npm_and_yarn group across 1 directory ([#384](https://github.com/pocket-id/pocket-id/pull/384) by @dependabot[bot])
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.43.1...v0.44.0
+
+## v0.43.1
+
+### Bug Fixes
+
+- wrong base locale causes crash ([3120ebf](https://github.com/pocket-id/pocket-id/commit/3120ebf239b90f0bc0a0af33f30622e034782398) by @stonith404)
+
+### Other
+
+- ignore e2e tests on Crowdin branch ([2fb4193](https://github.com/pocket-id/pocket-id/commit/2fb41937cacd9173b95c251b7bf00850fd097ca7) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.43.0...v0.43.1
+
+## v0.43.0
+
+### Features
+
+- name new passkeys based on agguids ([#332](https://github.com/pocket-id/pocket-id/pull/332) by @kmendell)
+- add support for translations ([#349](https://github.com/pocket-id/pocket-id/pull/349) by @jonasclaes)
+
+### Other
+
+- update Crowdin configuration ([3ee26a2](https://github.com/pocket-id/pocket-id/commit/3ee26a2cfb4f2fc6b35b10ab75bb26bd94b789d7) by @stonith404)
+- use language code with country for messages ([31ac560](https://github.com/pocket-id/pocket-id/commit/31ac56004ad7c7b52dbf7126da5d8d7f67b78b36) by @stonith404)
+- remove unused messages ([bb23194](https://github.com/pocket-id/pocket-id/commit/bb23194e8858dda2c9e5570879a33547954606e9) by @stonith404)
+- add language request issue template ([c578bab](https://github.com/pocket-id/pocket-id/commit/c578baba9507c4ca5919430442f9525adc64ca0a) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.42.1...v0.43.0
+
+## v0.42.1
+
+### Bug Fixes
+
+- kid not added to JWTs ([f7e36a4](https://github.com/pocket-id/pocket-id/commit/f7e36a422ea6b5327360c9a13308ae408ff7fffe) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.42.0...v0.42.1
+
+## v0.42.0
+
+### Features
+
+- store keys as JWK on disk ([#339](https://github.com/pocket-id/pocket-id/pull/339) by @ItalyPaleAle)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.41.0...v0.42.0
+
+## v0.41.0
+
+### Bug Fixes
+
+- own avatar not loading ([#351](https://github.com/pocket-id/pocket-id/pull/351) by @savely-krasovsky)
+
+### Features
+
+- allow reset of profile picture ([#355](https://github.com/pocket-id/pocket-id/pull/355) by @kmendell)
+
+### Other
+
+- correct misspellings ([#352](https://github.com/pocket-id/pocket-id/pull/352) by @szepeviktor)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.40.1...v0.41.0
+
+## v0.40.1
+
+### Bug Fixes
+
+- email logo icon displaying too big ([#336](https://github.com/pocket-id/pocket-id/pull/336) by @kmendell)
+- Fixes and performance improvements in utils package ([#331](https://github.com/pocket-id/pocket-id/pull/331) by @ItalyPaleAle)
+- remove custom claim key restrictions ([9f28503](https://github.com/pocket-id/pocket-id/commit/9f28503d6c73d3521d1309bee055704a0507e9b5) by @stonith404)
+- API keys not working if sqlite is used ([8ead0be](https://github.com/pocket-id/pocket-id/commit/8ead0be8cd0cfb542fe488b7251cfd5274975ae1) by @stonith404)
+- caching for own profile picture ([e45d9e9](https://github.com/pocket-id/pocket-id/commit/e45d9e970d327a5120ff9fb0c8d42df8af69bb38) by @stonith404)
+- emails are considered as medium spam by rspamd ([#337](https://github.com/pocket-id/pocket-id/pull/337) by @alexlehm)
+
+### Other
+
+- add separate worfklow for unit tests ([26e0594](https://github.com/pocket-id/pocket-id/commit/26e05947fe336a08c8b2ef460f768dfe53754e00) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.40.0...v0.40.1
+
+## v0.40.0
+
+### Bug Fixes
+
+- missing write permissions on scripts ([ec4b41a](https://github.com/pocket-id/pocket-id/commit/ec4b41a1d26ea00bb4a95f654ac4cc745b2ce2e8) by @stonith404)
+
+### Features
+
+- allow setting path where keys are stored ([#327](https://github.com/pocket-id/pocket-id/pull/327) by @ItalyPaleAle)
+
+### Other
+
+- add Dev Container ([#313](https://github.com/pocket-id/pocket-id/pull/313) by @nebula-it)
+- bump golang.org/x/net from 0.34.0 to 0.36.0 in /backend in the go_modules group across 1 directory ([#326](https://github.com/pocket-id/pocket-id/pull/326) by @dependabot[bot])
+- bump @babel/runtime from 7.26.7 to 7.26.10 in /frontend in the npm_and_yarn group across 1 directory ([#328](https://github.com/pocket-id/pocket-id/pull/328) by @dependabot[bot])
+- automatically detect release type in release script ([a4bfd08](https://github.com/pocket-id/pocket-id/commit/a4bfd08a0f5a800572cdd9f21d4f938d9dd5ec79) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.39.0...v0.40.0
+
+## v0.39.0
+
+### Bug Fixes
+
+- alternative login method link on mobile ([9ef2ddf](https://github.com/pocket-id/pocket-id/commit/9ef2ddf7963c6959992f3a5d6816840534e926e9) by @stonith404)
+
+### Features
+
+- api key authentication ([#291](https://github.com/pocket-id/pocket-id/pull/291) by @kmendell)
+
+### Other
+
+- adapt api key list to new sort behavior ([d1b9f3a](https://github.com/pocket-id/pocket-id/commit/d1b9f3a44e84430101ac544015b8fa6e21b51ed2) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.38.0...v0.39.0
+
+## v0.38.0
+
+### Bug Fixes
+
+- typo in account settings ([#307](https://github.com/pocket-id/pocket-id/pull/307) by @kotx)
+- redirection not correctly if signing in with email code ([e5ec264](https://github.com/pocket-id/pocket-id/commit/e5ec264bfd535752565bcc107099a9df5cb8aba7) by @stonith404)
+
+### Features
+
+- add env variable to disable update check ([31198fe](https://github.com/pocket-id/pocket-id/commit/31198feec2ae77dd6673c42b42002871ddd02d37) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.37.0...v0.38.0
+
+## v0.37.0
+
+### Bug Fixes
+
+- add timeout to update check ([04efc36](https://github.com/pocket-id/pocket-id/commit/04efc3611568a0b0127b542b8cc252d9e783af46) by @stonith404)
+- make sorting consistent around tables ([8e344f1](https://github.com/pocket-id/pocket-id/commit/8e344f1151628581b637692a1de0e48e7235a22d) by @stonith404)
+- add back setup page ([6a8dd84](https://github.com/pocket-id/pocket-id/commit/6a8dd84ca9396ff3369385af22f7e1f081bec2b2) by @stonith404)
+
+### Documentation
+
+- add Discord contact link to issue template ([2ee0bad](https://github.com/pocket-id/pocket-id/commit/2ee0bad2c0c27322c4ef8560235d71ff4a80f535) by @stonith404)
+
+### Features
+
+- increase default item count per page ([a9713cf](https://github.com/pocket-id/pocket-id/commit/a9713cf6a1e3c879dc773889b7983e51bbe3c45b) by @stonith404)
+- add ability to sign in with login code ([#271](https://github.com/pocket-id/pocket-id/pull/271) by @Pyxels)
+
+### Other
+
+- fix type errors ([d0da532](https://github.com/pocket-id/pocket-id/commit/d0da532240ab76ce97b32ed1ebffcc1accf54382) by @stonith404)
+- fix user group assignment test ([7885ae0](https://github.com/pocket-id/pocket-id/commit/7885ae011c7390ee9f71ddad2d6742b517c1af67) by @stonith404)
+- bump the npm_and_yarn group across 1 directory with 3 updates ([#306](https://github.com/pocket-id/pocket-id/pull/306) by @dependabot[bot])
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.36.0...v0.37.0
+
+## v0.36.0
+
+### Bug Fixes
+
+- default sorting on tables ([#299](https://github.com/pocket-id/pocket-id/pull/299) by @kmendell)
+
+### Features
+
+- enable sd_notify support ([#277](https://github.com/pocket-id/pocket-id/pull/277) by @savely-krasovsky)
+- display groups on the account page ([#296](https://github.com/pocket-id/pocket-id/pull/296) by @kmendell)
+
+### Other
+
+- add pr docker build ([#293](https://github.com/pocket-id/pocket-id/pull/293) by @kmendell)
+- use `github.repository` variable intead of hardcoding the repository name ([66090f3](https://github.com/pocket-id/pocket-id/commit/66090f36a86be9a59e4909839cbe67ef28ee69ba) by @stonith404)
+- remove PR docker build action ([37b24be](https://github.com/pocket-id/pocket-id/commit/37b24bed91a5eb2fe6e6db85198db6794c0611a5) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.35.6...v0.36.0
+
+## v0.35.6
+
+### Bug Fixes
+
+- support `LOGIN` authentication method for SMTP ([#292](https://github.com/pocket-id/pocket-id/pull/292) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.35.5...v0.35.6
+
+## v0.35.5
+
+### Bug Fixes
+
+- profile picture orientation if image is rotated with EXIF ([1026ee4](https://github.com/pocket-id/pocket-id/commit/1026ee4f5b5c7fda78b65c94a5d0f899525defd1) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.35.4...v0.35.5
+
+## v0.35.4
+
+### Bug Fixes
+
+- add `groups` scope and claim to well known endpoint ([4bafee4](https://github.com/pocket-id/pocket-id/commit/4bafee4f58f5a76898cf66d6192916d405eea389) by @stonith404)
+- support POST for OIDC userinfo endpoint ([1652cc6](https://github.com/pocket-id/pocket-id/commit/1652cc65f3f966d018d81a1ae22abb5ff1b4c47b) by @stonith404)
+- profile picture of other user can't be updated ([#273](https://github.com/pocket-id/pocket-id/pull/273) by @Pyxels)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.35.3...v0.35.4
+
+## v0.35.3
+
+### Bug Fixes
+
+- add option to manually select SMTP TLS method ([#268](https://github.com/pocket-id/pocket-id/pull/268) by @kmendell)
+- sync error if LDAP user collides with an existing user ([fde951b](https://github.com/pocket-id/pocket-id/commit/fde951b543281fedf9f602abae26b50881e3d157) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.35.2...v0.35.3
+
+## v0.35.2
+
+### Bug Fixes
+
+- updating profile picture of other user updates own profile picture ([887c5e4](https://github.com/pocket-id/pocket-id/commit/887c5e462a50c8fb579ca6804f1a643d8af78fe8) by @stonith404)
+- delete profile picture if user gets deleted ([9a167d4](https://github.com/pocket-id/pocket-id/commit/9a167d4076872e5e3e5d78d2a66ef7203ca5261b) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.35.1...v0.35.2
+
+## v0.35.1
+
+### Bug Fixes
+
+- binary profile picture can't be imported from LDAP ([840a672](https://github.com/pocket-id/pocket-id/commit/840a672fc35ca8476caf86d7efaba9d54bce86aa) by @stonith404)
+- add validation that `PUBLIC_APP_URL` can't contain a path ([a6ae7ae](https://github.com/pocket-id/pocket-id/commit/a6ae7ae28713f7fc8018ae2aa7572986df3e1a5b) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.35.0...v0.35.1
+
+## v0.35.0
+
+### Bug Fixes
+
+- app config strings starting with a number are parsed incorrectly ([816c198](https://github.com/pocket-id/pocket-id/commit/816c198a42c189cb1f2d94885d2e3623e47e2848) by @stonith404)
+- emails do not get rendered correctly in Gmail ([dca9e7a](https://github.com/pocket-id/pocket-id/commit/dca9e7a11a3ba5d3b43a937f11cb9d16abad2db5) by @stonith404)
+
+### Features
+
+- add ability to upload a profile picture ([#244](https://github.com/pocket-id/pocket-id/pull/244) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.34.0...v0.35.0
+
+## v0.34.0
+
+### Features
+
+- add LDAP group membership attribute ([#236](https://github.com/pocket-id/pocket-id/pull/236) by @kmendell)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.33.0...v0.34.0
+
+## v0.33.0
+
+### Bug Fixes
+
+- show "Sync Now" and "Test Email" button even if UI config is disabled ([4d0fff8](https://github.com/pocket-id/pocket-id/commit/4d0fff821e2245050ce631b4465969510466dfae) by @stonith404)
+- alignment of OIDC client details ([c3980d3](https://github.com/pocket-id/pocket-id/commit/c3980d3d28a7158a4dc9369af41f185b891e485e) by @stonith404)
+- layout of OIDC client details page on mobile ([3de1301](https://github.com/pocket-id/pocket-id/commit/3de1301fa84b3ab4fff4242d827c7794d44910f2) by @stonith404)
+
+### Features
+
+- add end session endpoint ([#232](https://github.com/pocket-id/pocket-id/pull/232) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.32.0...v0.33.0
+
+## v0.32.0
+
+### Features
+
+- add ability to set custom Geolite DB URL ([#226](https://github.com/pocket-id/pocket-id/pull/226) by @wargio)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.31.0...v0.32.0
+
+## v0.31.0
+
+### Bug Fixes
+
+- user linking in ldap group sync ([#222](https://github.com/pocket-id/pocket-id/pull/222) by @kmendell)
+
+### Features
+
+- display source in user and group table ([#225](https://github.com/pocket-id/pocket-id/pull/225) by @kmendell)
+- add ability to override the UI configuration with environment variables ([4e85842](https://github.com/pocket-id/pocket-id/commit/4e858420e9d9713e19f3b35c45c882403717f72f) by @stonith404)
+- add warning for only having one passkey configured ([#220](https://github.com/pocket-id/pocket-id/pull/220) by @kmendell)
+
+### Other
+
+- remove Docker Hub registry ([7fbc356](https://github.com/pocket-id/pocket-id/commit/7fbc356d8d1175b087d881764704206540d1ba1d) by @stonith404)
+- downgrade ubuntu version of Docker build action runner ([43790dc](https://github.com/pocket-id/pocket-id/commit/43790dc1be76eb1e21e39a2de77da2232ed458b5) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.30.0...v0.31.0
+
+## v0.30.0
+
+### Documentation
+
+- fix freshrss callback url ([#212](https://github.com/pocket-id/pocket-id/pull/212) by @RobinMicek)
+- add landing page ([#203](https://github.com/pocket-id/pocket-id/pull/203) by @kmendell)
+- improve landing page ([3dda2e1](https://github.com/pocket-id/pocket-id/commit/3dda2e16e98e4f49e48e5ed56d9f471701abd842) by @stonith404)
+- add docs root path redirection ([98add37](https://github.com/pocket-id/pocket-id/commit/98add37390000c32d2d74e8b7ee3b2bf9ae15f06) by @stonith404)
+- improve mobile layout of landing page ([7c04bda](https://github.com/pocket-id/pocket-id/commit/7c04bda5b77ae753b4bb5bc6a3b336ab8983435d) by @stonith404)
+
+### Features
+
+- add custom ldap search filters ([#216](https://github.com/pocket-id/pocket-id/pull/216) by @kmendell)
+- update host configuration to allow external access ([#218](https://github.com/pocket-id/pocket-id/pull/218) by @jonasclaes)
+
+### Other
+
+- fix old docker image references ([0bae7e4](https://github.com/pocket-id/pocket-id/commit/0bae7e4f53d85f8f3f30f80675b8346cc0125a18) by @stonith404)
+- add missing permissions to "Build and Push Docker Image" ([d66cf70](https://github.com/pocket-id/pocket-id/commit/d66cf70d50f68811afbb86742b0c108b5d8567fa) by @stonith404)
+- remove docs from repository ([0751540](https://github.com/pocket-id/pocket-id/commit/0751540d7d47851698be5d0fde1c330ea24a6d54) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.29.0...v0.30.0
+
+## v0.29.0
+
+### Documentation
+
+- enhance documentation ([#205](https://github.com/pocket-id/pocket-id/pull/205) by @kmendell)
+
+### Features
+
+- add option to disable Caddy in the Docker container ([e864d5d](https://github.com/pocket-id/pocket-id/commit/e864d5dcbff1ef28dc6bf120e4503093a308c5c8) by @stonith404)
+- add JSON support in custom claims ([15cde6a](https://github.com/pocket-id/pocket-id/commit/15cde6ac66bc857ac28df545a37c1f4341977595) by @stonith404)
+
+### Other
+
+- replace `stonith404` with `pocket-id` after org migration ([c6ab2b2](https://github.com/pocket-id/pocket-id/commit/c6ab2b252cfca1939f891008b4b93a826c6fc14b) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.28.1...v0.29.0
+
+## v0.28.1
+
+### Bug Fixes
+
+- don't return error page if version info fetching failed ([d06257e](https://github.com/pocket-id/pocket-id/commit/d06257ec9b5e46e25e40c174b4bef02dca0a1ea3) by @stonith404)
+
+### Documentation
+
+- fix reauthentication in caddy-security example ([19ef483](https://github.com/pocket-id/pocket-id/commit/19ef4833e927b9bf4984b43913a39ed58a45a98f) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.28.0...v0.28.1
+
+## v0.28.0
+
+### Bug Fixes
+
+- use cursor pointer on clickable elements ([7798580](https://github.com/pocket-id/pocket-id/commit/77985800ae9628104e03e7f2e803b7ed9eaaf4e0) by @stonith404)
+- trusted_proxies for IPv6 enabled hosts ([#189](https://github.com/pocket-id/pocket-id/pull/189) by @apearson)
+- non LDAP user group can't be updated after update ([ecd74b7](https://github.com/pocket-id/pocket-id/commit/ecd74b794f1ffb7da05bce0046fb8d096b039409) by @stonith404)
+- missing user service dependency ([61e71ad](https://github.com/pocket-id/pocket-id/commit/61e71ad43b8f0f498133d3eb2381382e7bc642b9) by @stonith404)
+
+### Documentation
+
+- add version label to navbar ([#186](https://github.com/pocket-id/pocket-id/pull/186) by @kmendell)
+- Add Immich and Headscale client examples ([#191](https://github.com/pocket-id/pocket-id/pull/191) by @jeffreygarc)
+- Added Gitea and Memos example ([#194](https://github.com/pocket-id/pocket-id/pull/194) by @PrtmPhlp)
+- add custom `pocket-id.org` domain ([e607fe4](https://github.com/pocket-id/pocket-id/commit/e607fe424ae775f93b9bdcee82fbcc421578de67) by @stonith404)
+- add new `demo.pocket-id.org` domain to the README ([2d3cba6](https://github.com/pocket-id/pocket-id/commit/2d3cba63089ed31276a29342a39c2a986f158a5a) by @stonith404)
+- add helper scripts install for proxmox ([#197](https://github.com/pocket-id/pocket-id/pull/197) by @kmendell)
+- add example for adding Pocket ID to FreshRSS ([#200](https://github.com/pocket-id/pocket-id/pull/200) by @UncleArya)
+
+### Features
+
+- allow LDAP users and groups to be deleted if LDAP gets disabled ([9ab1787](https://github.com/pocket-id/pocket-id/commit/9ab178712aa3cc71546a89226e67b7ba91245251) by @stonith404)
+- map allowed groups to OIDC clients ([#202](https://github.com/pocket-id/pocket-id/pull/202) by @stonith404)
+
+### Other
+
+- add auto deployment for docs website ([7497f4a](https://github.com/pocket-id/pocket-id/commit/7497f4ad409aeacb5c8f0764a9a91c7e26b4f6d0) by @stonith404)
+- ignore irrelevant paths for e2e tests ([a1b20f0](https://github.com/pocket-id/pocket-id/commit/a1b20f0e743314627c38e20ad1d9751d72f3525b) by @stonith404)
+- run formatter ([28346da](https://github.com/pocket-id/pocket-id/commit/28346da7319b8b27c8dbe727e8368dc4024e2908) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.27.2...v0.28.0
+
+## v0.27.2
+
+### Bug Fixes
+
+- smtp hello for tls connections ([#180](https://github.com/pocket-id/pocket-id/pull/180) by @kmendell)
+
+### Documentation
+
+- fix typos and improve clarity in proxmox.md ([#183](https://github.com/pocket-id/pocket-id/pull/183) by @BrutalCoding)
+- add missing env file flag to frontend start command ([a65ce56](https://github.com/pocket-id/pocket-id/commit/a65ce56b42a0395538884c2dfe0c9454c9b70b9f) by @stonith404)
+
+### Other
+
+- upgrade to Nodejs 22 ([8cd834a](https://github.com/pocket-id/pocket-id/commit/8cd834a503e4df01e3783cc4955e32263d6d87ed) by @stonith404)
+- upgrade to Tailwind 4 ([5c452ce](https://github.com/pocket-id/pocket-id/commit/5c452ceef06e76c7d442c29d110ec613b0bb7972) by @stonith404)
+- upgrade frontend and backend dependencies ([04c7f18](https://github.com/pocket-id/pocket-id/commit/04c7f180de2f9963d614058975c8ff79e2f0bbab) by @stonith404)
+- downgrade formsnap ([dab37c5](https://github.com/pocket-id/pocket-id/commit/dab37c5967999d2e6275eebb7351193d2cc65048) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.27.1...v0.27.2
+
+## v0.27.1
+
+### Bug Fixes
+
+- send hostname derived from `PUBLIC_APP_URL` with SMTP EHLO command ([397544c](https://github.com/pocket-id/pocket-id/commit/397544c0f3f2b49f1f34ae53e6b9daf194d1ae28) by @stonith404)
+- use OS hostname for SMTP EHLO message ([47c39f6](https://github.com/pocket-id/pocket-id/commit/47c39f6d382c496cb964262adcf76cc8dbb96da3) by @stonith404)
+- add `__HOST` prefix to cookies ([#175](https://github.com/pocket-id/pocket-id/pull/175) by @stonith404)
+
+### Documentation
+
+- add more client-examples ([#166](https://github.com/pocket-id/pocket-id/pull/166) by @kmendell)
+- remove duplicate `contribute.md` ([d071641](https://github.com/pocket-id/pocket-id/commit/d0716418908470e7408669153d508cd05a5d4c51) by @stonith404)
+- make CONTRIBUTING instructions work & fix example envs ([#152](https://github.com/pocket-id/pocket-id/pull/152) by @cdanis)
+
+### Other
+
+- add GitHub release creation to `create-release.sh` script ([7b40355](https://github.com/pocket-id/pocket-id/commit/7b403552ba91f28b38c8e30ed46e13643ed1b876) by @stonith404)
+- bug template update ([#133](https://github.com/pocket-id/pocket-id/pull/133) by @kmendell)
+- remove duplicate text from issue template ([2884021](https://github.com/pocket-id/pocket-id/commit/2884021055325df15f2b87a37872dd868b0219ca) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.27.0...v0.27.1
+
+## v0.27.0
+
+### Bug Fixes
+
+- ensure the downloaded GeoLite2 DB is not corrupted & prevent RW race condition ([#138](https://github.com/pocket-id/pocket-id/pull/138) by @wargio)
+- add save changes dialog before sending test email ([#165](https://github.com/pocket-id/pocket-id/pull/165) by @kmendell)
+
+### Documentation
+
+- create sample-configurations.md ([#142](https://github.com/pocket-id/pocket-id/pull/142) by @kamilkosek)
+- add `delay_start` to caddy security ([c211d3f](https://github.com/pocket-id/pocket-id/commit/c211d3fc67a17fc1ed6e207fecb5c29e1d3542c5) by @stonith404)
+- add docusaurus docs ([#118](https://github.com/pocket-id/pocket-id/pull/118) by @kmendell)
+- fix open-webui docs page ([#162](https://github.com/pocket-id/pocket-id/pull/162) by @kmendell)
+
+### Features
+
+- display private IP ranges correctly in audit log ([#139](https://github.com/pocket-id/pocket-id/pull/139) by @cdanis)
+
+### Other
+
+- optimize images ([#161](https://github.com/pocket-id/pocket-id/pull/161) by @imgbot[bot])
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.26.0...v0.27.0
+
+## v0.26.0
+
+### Bug Fixes
+
+- non LDAP users get created with a empty LDAP ID string ([3f02d08](https://github.com/pocket-id/pocket-id/commit/3f02d081098ad2caaa60a56eea4705639f80d01f) by @stonith404)
+
+### Features
+
+- support wildcard callback URLs ([8a1db0c](https://github.com/pocket-id/pocket-id/commit/8a1db0cb4a5d4b32b4fdc19d41fff688a7c71a56) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.25.1...v0.26.0
+
+## v0.25.1
+
+### Bug Fixes
+
+- disable account details inputs if user is imported from LDAP ([a8b9d60](https://github.com/pocket-id/pocket-id/commit/a8b9d60a86e80c10d6fba07072b1d32cec400ecb) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.25.0...v0.25.1
+
+## v0.25.0
+
+### Bug Fixes
+
+- search input not displayed if response hasn't any items ([05a98eb](https://github.com/pocket-id/pocket-id/commit/05a98ebe87d7a88e8b96b144c53250a40d724ec3) by @stonith404)
+- always set secure on cookie ([#130](https://github.com/pocket-id/pocket-id/pull/130) by @cdanis)
+- session duration ignored in cookie expiration ([bc8f454](https://github.com/pocket-id/pocket-id/commit/bc8f454ea173ecc60e06450a1d22e24207f76714) by @stonith404)
+- don't panic if LDAP sync fails on startup ([e284e35](https://github.com/pocket-id/pocket-id/commit/e284e352e2b95fac1d098de3d404e8531de4b869) by @stonith404)
+- improve spacing of checkboxes on application configuration page ([090eca2](https://github.com/pocket-id/pocket-id/commit/090eca202d198852e6fbf4e6bebaf3b5ada13944) by @stonith404)
+
+### Documentation
+
+- add guide to setup Pocket ID with Caddy ([6e3728d](https://github.com/pocket-id/pocket-id/commit/6e3728ddc86cce95b2041513564b087463f5b2d3) by @stonith404)
+
+### Features
+
+- add LDAP sync ([#106](https://github.com/pocket-id/pocket-id/pull/106) by @kmendell)
+- allow sign in with email ([#100](https://github.com/pocket-id/pocket-id/pull/100) by @stonith404)
+- automatically authorize client if signed in ([d5dd118](https://github.com/pocket-id/pocket-id/commit/d5dd118a3f4ad6eed9ca496c458201bb10f148a0) by @stonith404)
+
+### Other
+
+- run formatter ([692ff70](https://github.com/pocket-id/pocket-id/commit/692ff70c918de47463d0a98ba365883f24630968) by @stonith404)
+- adapt OIDC tests ([d4055af](https://github.com/pocket-id/pocket-id/commit/d4055af3f4dbd3c3cfa0475f2afa1fbb24dd565a) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.24.1...v0.25.0
+
+## v0.24.1
+
+### Bug Fixes
+
+- audit log table overflow if row data is long ([4d337a2](https://github.com/pocket-id/pocket-id/commit/4d337a20c5cb92ef80bb7402f9b99b08e3ad0b6b) by @stonith404)
+- optional arguments not working with `create-one-time-access-token.sh` ([8885571](https://github.com/pocket-id/pocket-id/commit/888557171d61589211b10f70dce405126216ad61) by @stonith404)
+- remove restrictive validation for group names ([be6e25a](https://github.com/pocket-id/pocket-id/commit/be6e25a167de8bf07075b46f09d9fc1fa6c74426) by @stonith404)
+
+### Documentation
+
+- add account recovery to README ([2a984ee](https://github.com/pocket-id/pocket-id/commit/2a984eeaf1ee169f9f4987acde0e79660d2b6781) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.24.0...v0.24.1
+
+## v0.24.0
+
+### Bug Fixes
+
+- send test email to the user that has requested it ([a649c4b](https://github.com/pocket-id/pocket-id/commit/a649c4b4a543286123f4d1f3c411fe1a7e2c6d71) by @stonith404)
+- pkce state not correctly reflected in oidc client info ([61d18a9](https://github.com/pocket-id/pocket-id/commit/61d18a9d1b167ff59a59523ff00d00ca8f23258d) by @stonith404)
+
+### Features
+
+- add sorting for tables ([fd69830](https://github.com/pocket-id/pocket-id/commit/fd69830c2681985e4fd3c5336a2b75c9fb7bc5d4) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.23.0...v0.24.0
+
+## v0.23.0
+
+### Features
+
+- add PKCE for non public clients ([adcf3dd](https://github.com/pocket-id/pocket-id/commit/adcf3ddc6682794e136a454ef9e69ddd130626a8) by @stonith404)
+- use same table component for OIDC client list as all other lists ([2d31fc2](https://github.com/pocket-id/pocket-id/commit/2d31fc2cc9201bb93d296faae622f52c6dcdfebc) by @stonith404)
+
+### Other
+
+- include static assets in binary ([785200d](https://github.com/pocket-id/pocket-id/commit/785200de61deb1544aac5ff6f914a35e27632bbc) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.22.0...v0.23.0
+
+## v0.22.0
+
+### Bug Fixes
+
+- passkey can't be added if `PUBLIC_APP_URL` includes a port ([0729ce9](https://github.com/pocket-id/pocket-id/commit/0729ce9e1a8dab9912900a01dcd0fbd892718a1a) by @stonith404)
+- hash in callback url is incorrectly appended ([f6f2736](https://github.com/pocket-id/pocket-id/commit/f6f2736bba65eee017f2d8cdaa70621574092869) by @stonith404)
+- allow first and last name of user to be between 1 and 50 characters ([1ff20ca](https://github.com/pocket-id/pocket-id/commit/1ff20caa3ccd651f9fb30f958ffb807dfbbcbd8a) by @stonith404)
+- make user validation consistent between pages ([333a1a1](https://github.com/pocket-id/pocket-id/commit/333a1a18d59f675111f4ed106fa5614ef563c6f4) by @stonith404)
+
+### Documentation
+
+- improve text in README ([ff75322](https://github.com/pocket-id/pocket-id/commit/ff75322e7de08970d8573cd3f081194305b0daee) by @stonith404)
+- add "groups" scope to the oauth2-proxy sample configuration ([#85](https://github.com/pocket-id/pocket-id/pull/85) by @janpfischer)
+
+### Features
+
+- add warning if passkeys missing ([2d0bd8d](https://github.com/pocket-id/pocket-id/commit/2d0bd8dcbfb73650b7829cb66f40decb284bd73b) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.21.0...v0.22.0
+
+## v0.21.0
+
+### Bug Fixes
+
+- OIDC client logo gets removed if other properties get updated ([789d939](https://github.com/pocket-id/pocket-id/commit/789d9394a533831e7e2fb8dc3f6b338787336ad8) by @stonith404)
+
+### Features
+
+- improve error state design for login page ([0716c38](https://github.com/pocket-id/pocket-id/commit/0716c38fb8ce7fa719c7fe0df750bdb213786c21) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.20.1...v0.21.0
+
+## v0.20.1
+
+### Bug Fixes
+
+- `create-one-time-access-token.sh` script not compatible with postgres ([34e3519](https://github.com/pocket-id/pocket-id/commit/34e35193f9f3813f6248e60f15080d753e8da7ae) by @stonith404)
+- wrong date time datatype used for read operations with Postgres ([bad901e](https://github.com/pocket-id/pocket-id/commit/bad901ea2b661aadd286e5e4bed317e73bd8a70d) by @stonith404)
+
+### Other
+
+- add e2e test for one time access tokens ([5480ab0](https://github.com/pocket-id/pocket-id/commit/5480ab0f188ed76a991b05ebc81242a688a39a5f) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.20.0...v0.20.1
+
+## v0.20.0
+
+### Documentation
+
+- add callback url to `proxy-services.md` ([3006bc9](https://github.com/pocket-id/pocket-id/commit/3006bc9ef798189c1f1311ae1e832055d8653e51) by @stonith404)
+- add ghcr.io Docker image to `docker-compose.yml` ([e9d83dd](https://github.com/pocket-id/pocket-id/commit/e9d83dd6c3d2c9d053271cf24b23cc9228892bd4) by @stonith404)
+
+### Features
+
+- add support for Postgres database provider ([#79](https://github.com/pocket-id/pocket-id/pull/79) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.19.0...v0.20.0
+
+## v0.19.0
+
+### Documentation
+
+- add demo link ([9a8ec15](https://github.com/pocket-id/pocket-id/commit/9a8ec1567851159bed938a2aad9b79c299816b4b) by @stonith404)
+
+### Features
+
+- add Tailscale IP detection with CGNAT range check ([#77](https://github.com/pocket-id/pocket-id/pull/77) by @s0up4200)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.18.0...v0.19.0
+
+## v0.18.0
+
+### Bug Fixes
+
+- email save toast shows two times ([f2bfc73](https://github.com/pocket-id/pocket-id/commit/f2bfc731585ad7424eb8c4c41c18368fc0f75ffc) by @stonith404)
+
+### Documentation
+
+- improve `MAXMIND_LICENSE_KEY` documentation in readme ([31a6b57](https://github.com/pocket-id/pocket-id/commit/31a6b57ec1b795304d72aab0c5693d340620c533) by @stonith404)
+- add `PUID` and `PGID` to `.env.example` ([7d6b1d1](https://github.com/pocket-id/pocket-id/commit/7d6b1d19e99ed9626fe4067337f20d65acda2527) by @stonith404)
+
+### Features
+
+- add option to disable TLS for email sending ([f9fa2c6](https://github.com/pocket-id/pocket-id/commit/f9fa2c6706a8bf949fe5efd6664dec8c80e18659) by @stonith404)
+- allow empty user and password in SMTP configuration ([a9f4dad](https://github.com/pocket-id/pocket-id/commit/a9f4dada321841d3611b15775307228b34e7793f) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.17.0...v0.18.0
+
+## v0.17.0
+
+### Bug Fixes
+
+- don't try to create a new user if the Docker user is not root ([#71](https://github.com/pocket-id/pocket-id/pull/71) by @cdanis)
+
+### Documentation
+
+- fix OAuth2 proxy link in readme ([0b4101c](https://github.com/pocket-id/pocket-id/commit/0b4101ccce973847d863e441816f77912def388a) by @stonith404)
+
+### Features
+
+- add option to specify the Max Mind license key for the Geolite2 db ([fcf08a4](https://github.com/pocket-id/pocket-id/commit/fcf08a4d898160426442bd80830f4431988f4313) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.16.0...v0.17.0
+
+## v0.16.0
+
+### Features
+
+- add health check ([058084e](https://github.com/pocket-id/pocket-id/commit/058084ed64816b12108e25bf04af988fc97772ed) by @stonith404)
+- improve error message for invalid callback url ([#69](https://github.com/pocket-id/pocket-id/pull/69) by @alexlehm)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.15.0...v0.16.0
+
+## v0.15.0
+
+### Bug Fixes
+
+- mobile layout overflow on application configuration page ([e784093](https://github.com/pocket-id/pocket-id/commit/e784093342f9977ea08cac65ff0c3de4d2644872) by @stonith404)
+
+### Documentation
+
+- add info that PKCE isn't implemented yet ([760c8e8](https://github.com/pocket-id/pocket-id/commit/760c8e83bb5a2362e1bdc21f2f0b92c154783c50) by @stonith404)
+
+### Features
+
+- add PKCE support ([3613ac2](https://github.com/pocket-id/pocket-id/commit/3613ac261cf65a2db0620ff16dc6df239f6e5ecd) by @stonith404)
+- add option to skip TLS certificate check and ability to send test email ([653d948](https://github.com/pocket-id/pocket-id/commit/653d948f73b61e6d1fd3484398fef1a2a37e6d92) by @stonith404)
+
+### Other
+
+- add Docker image to ghcr.io and add Docker metadata action ([5f44fef](https://github.com/pocket-id/pocket-id/commit/5f44fef85f9227f73ffde8e645d2a1631b00174d) by @stonith404)
+- move checkboxes with label in seperate component ([a1302ef](https://github.com/pocket-id/pocket-id/commit/a1302ef7bf5b06b68c08e5bb8de0f4472c660774) by @stonith404)
+- make Docker image run without root user ([#67](https://github.com/pocket-id/pocket-id/pull/67) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.14.0...v0.15.0
+
+## v0.14.0
+
+### Bug Fixes
+
+- time displayed incorrectly in audit log ([3d3fb4d](https://github.com/pocket-id/pocket-id/commit/3d3fb4d855ef510f2292e98fcaaaf83debb5d3e0) by @stonith404)
+- overflow of pagination control on mobile ([de45398](https://github.com/pocket-id/pocket-id/commit/de4539890349153c467013c24c4d6b30feb8fed8) by @stonith404)
+
+### Features
+
+- add audit log event for one time access token sign in ([aca2240](https://github.com/pocket-id/pocket-id/commit/aca2240a50a12e849cfb6e1aa56390b000aebae0) by @stonith404)
+
+### Other
+
+- fix build warnings ([725388f](https://github.com/pocket-id/pocket-id/commit/725388fcc7b98b4461354d2676a39ff34e50d6e1) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.13.1...v0.14.0
+
+## v0.13.1
+
+### Bug Fixes
+
+- typo in Self-Account Editing description ([5b9f4d7](https://github.com/pocket-id/pocket-id/commit/5b9f4d732615f428c13d3317da96a86c5daebd89) by @stonith404)
+- errors in middleware do not abort the request ([376d747](https://github.com/pocket-id/pocket-id/commit/376d747616b1e835f252d20832c5ae42b8b0b737) by @stonith404)
+
+### Features
+
+- add list empty indicator ([becfc00](https://github.com/pocket-id/pocket-id/commit/becfc0004a87c01e18eb92ac85bf4e33f105b6a3) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.13.0...v0.13.1
+
+## v0.13.0
+
+### Bug Fixes
+
+- bad gateway error if nginx reverse proxy is in front ([590cb02](https://github.com/pocket-id/pocket-id/commit/590cb02f6c15f3e8aae81d67edc8770a2cffdb42) by @stonith404)
+
+### Documentation
+
+- add Jellyfin Integration Guide ([#51](https://github.com/pocket-id/pocket-id/pull/51) by @donkevlar)
+- add nginx configuration to README ([78c88f5](https://github.com/pocket-id/pocket-id/commit/78c88f53396d056b6a8cb388c0de9649db072066) by @stonith404)
+
+### Features
+
+- add ability to define expiration of one time link ([2ccabf8](https://github.com/pocket-id/pocket-id/commit/2ccabf835c2c923d6986d9cafb4e878f5110b91a) by @stonith404)
+
+### Other
+
+- change default port in dockerfile ([3484daf](https://github.com/pocket-id/pocket-id/commit/3484daf8706a6122de6a04af2595932b224afa99) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.12.0...v0.13.0
+
+## v0.12.0
+
+### Features
+
+- custom claims ([#53](https://github.com/pocket-id/pocket-id/pull/53) by @stonith404)
+- add validation to custom claim input ([7bfc3f4](https://github.com/pocket-id/pocket-id/commit/7bfc3f43a591287c038187ed5e782de6b9dd738b) by @stonith404)
+- add option to disable self-account editing ([8304065](https://github.com/pocket-id/pocket-id/commit/83040656525cf7b6c8f2acf416c5f8f3288f3d48) by @stonith404)
+
+### Other
+
+- fix flaky playwright tests ([735dc70](https://github.com/pocket-id/pocket-id/commit/735dc70d5fd16abe6e9a109dbc8e190ebbb819b1) by @stonith404)
+- fix html reporting of playwright ([0b0a678](https://github.com/pocket-id/pocket-id/commit/0b0a6781ff4bfa226ef77bfda19fc9cb878720ae) by @stonith404)
+- correctly reset app config in tests ([3350398](https://github.com/pocket-id/pocket-id/commit/3350398abcf948243a8445225791127a99e4095e) by @stonith404)
+- fix custom claims test data ([b9daa5d](https://github.com/pocket-id/pocket-id/commit/b9daa5d7576881c5b5fbc1f290661835bfd8a892) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.11.0...v0.12.0
+
+## v0.11.0
+
+### Bug Fixes
+
+- powered by link text color in light mode ([18c5103](https://github.com/pocket-id/pocket-id/commit/18c5103c20ce79abdc0f724cdedd642c09269e78) by @stonith404)
+
+### Features
+
+- add `email_verified` claim ([5565f60](https://github.com/pocket-id/pocket-id/commit/5565f60d6d62ca24bedea337e21effc13e5853a5) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.10.0...v0.11.0
+
+## v0.10.0
+
+### Bug Fixes
+
+- increase callback url count ([f3f0e1d](https://github.com/pocket-id/pocket-id/commit/f3f0e1d56d7656bdabbd745a4eaf967f63193b6c) by @stonith404)
+- improve text for initial admin account setup ([0a07344](https://github.com/pocket-id/pocket-id/commit/0a0734413943b1fff27d8f4ccf07587e207e2189) by @stonith404)
+- no DTO was returned from exchange one time access token endpoint ([824c5cb](https://github.com/pocket-id/pocket-id/commit/824c5cb4f3d6be7f940c1758112fbe9322df5768) by @stonith404)
+- cache version information for 3 hours ([29d632c](https://github.com/pocket-id/pocket-id/commit/29d632c1514d6edacdfebe6deae4c95fc5a0f621) by @stonith404)
+
+### Features
+
+- add version information to footer and update link if new update is available ([70ad0b4](https://github.com/pocket-id/pocket-id/commit/70ad0b4f39699fd81ffdfd5c8d6839f49348be78) by @stonith404)
+- add script for creating one time access token ([a1985ce](https://github.com/pocket-id/pocket-id/commit/a1985ce1b200550e91c5cb42a8d19899dcec831e) by @stonith404)
+
+### Other
+
+- save dates as unix timestamps in database ([b39bc4f](https://github.com/pocket-id/pocket-id/commit/b39bc4f79a87c7d2a47e57705a99bb8fadcdde5d) by @stonith404)
+- move development scripts into seperate folder ([3a300a2](https://github.com/pocket-id/pocket-id/commit/3a300a2b51be9516d8ff415e0a79f9254a2485e1) by @stonith404)
+- improve check of required tools in one time access token script ([0aff618](https://github.com/pocket-id/pocket-id/commit/0aff6181c9ae7b5dcfa8b5f66afe61390362b533) by @stonith404)
+- dump frontend dependencies ([2092007](https://github.com/pocket-id/pocket-id/commit/2092007752d3442d1af4dc79190cb50a1ad97cb5) by @stonith404)
+- fix wrong file name of package.json in release script ([6560fd9](https://github.com/pocket-id/pocket-id/commit/6560fd92795e3f1006707a4c77ae70d10e1ff258) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.9.0...v0.10.0
+
+## v0.9.0
+
+### Bug Fixes
+
+- allow copy to clipboard for client secret ([29748cc](https://github.com/pocket-id/pocket-id/commit/29748cc6c7b7e5a6b54bfe837e0b1a98fa1ad594) by @stonith404)
+
+### Features
+
+- use improve table for users and audit logs ([11ed661](https://github.com/pocket-id/pocket-id/commit/11ed661f86a512f78f66d604a10c1d47d39f2c39) by @stonith404)
+- add environment variable to change the caddy port in Docker ([ff06bf0](https://github.com/pocket-id/pocket-id/commit/ff06bf0b34496ce472ba6d3ebd4ea249f21c0ec3) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.8.1...v0.9.0
+
+## v0.8.1
+
+### Bug Fixes
+
+- add key id to JWK ([282ff82](https://github.com/pocket-id/pocket-id/commit/282ff82b0c7e2414b3528c8ca325758245b8ae61) by @stonith404)
+
+### Other
+
+- create dummy GeoLite2 City database for e2e tests ([896da81](https://github.com/pocket-id/pocket-id/commit/896da812a3fe0cad89305f793c405eec0d6b5cfa) by @stonith404)
+- dump dependencies ([9d5f83d](https://github.com/pocket-id/pocket-id/commit/9d5f83da78d42540260775a4e626c006b5f331c8) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.8.0...v0.8.1
+
+## v0.8.0
+
+### Features
+
+- add location based on ip to the audit log ([025378d](https://github.com/pocket-id/pocket-id/commit/025378d14edd2d72da76e90799a0ccdd42cf672c) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.7.1...v0.8.0
+
+## v0.7.1
+
+### Bug Fixes
+
+- initials don't get displayed if Gravatar avatar doesn't exist ([e095628](https://github.com/pocket-id/pocket-id/commit/e09562824a794bc7d240e9d229709d4b389db7d5) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.7.0...v0.7.1
+
+## v0.7.0
+
+### Features
+
+- add ability to set light and dark mode logo ([be45eed](https://github.com/pocket-id/pocket-id/commit/be45eed125e33e9930572660a034d5f12dc310ce) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.6.0...v0.7.0
+
+## v0.6.0
+
+### Bug Fixes
+
+- only return user groups if it is explicitly requested ([a4a90a1](https://github.com/pocket-id/pocket-id/commit/a4a90a16a9726569a22e42560184319b25fd7ca6) by @stonith404)
+
+### Features
+
+- add user groups ([24c948e](https://github.com/pocket-id/pocket-id/commit/24c948e6a66f283866f6c8369c16fa6cbcfa626c) by @stonith404)
+- add gravatar profile picture integration ([365734e](https://github.com/pocket-id/pocket-id/commit/365734ec5d8966c2ab877c60cfb176b9cdc36880) by @stonith404)
+- add copy to clipboard option for OIDC client information ([f82020c](https://github.com/pocket-id/pocket-id/commit/f82020ccfb0d4fbaa1dd98182188149d8085252a) by @stonith404)
+
+### Other
+
+- format caddyfiles ([7a54d3a](https://github.com/pocket-id/pocket-id/commit/7a54d3ae2085beae0c5b565e2873e78457307901) by @stonith404)
+- add user group tests ([d02d893](https://github.com/pocket-id/pocket-id/commit/d02d8931a0c2510c3e8ec354ae634aac970cba2b) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.5.3...v0.6.0
+
+## v0.5.3
+
+### Bug Fixes
+
+- port environment variables get ignored in caddyfile ([3c67765](https://github.com/pocket-id/pocket-id/commit/3c67765992d7369a79812bc8cd216c9ba12fd96e) by @stonith404)
+- add space to "Firstname" and "Lastname" label ([#31](https://github.com/pocket-id/pocket-id/pull/31) by @edbourque0)
+
+### Other
+
+- set the go version to `1.23.1` ([6bb613e](https://github.com/pocket-id/pocket-id/commit/6bb613e0e7979e253dd0bfade8c24d7409add617) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.5.2...v0.5.3
+
+## v0.5.2
+
+### Bug Fixes
+
+- updated application name doesn't apply to webauthn credential ([924bb14](https://github.com/pocket-id/pocket-id/commit/924bb1468bbd8e42fa6a530ef740be73ce3b3914) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.5.1...v0.5.2
+
+## v0.5.1
+
+### Bug Fixes
+
+- debounce oidc client and user search ([9c2848d](https://github.com/pocket-id/pocket-id/commit/9c2848db1d93c230afc6c5f64e498e9f6df8c8a7) by @stonith404)
+
+### Features
+
+- improve email templating ([#27](https://github.com/pocket-id/pocket-id/pull/27) by @oidq)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.5.0...v0.5.1
+
+## v0.5.0
+
+### Features
+
+- add audit log with email notification ([#26](https://github.com/pocket-id/pocket-id/pull/26) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.4.1...v0.5.0
+
+## v0.4.1
+
+### Bug Fixes
+
+- limit width of content on large screens ([c6f83a5](https://github.com/pocket-id/pocket-id/commit/c6f83a581ad385391d77fec7eeb385060742f097) by @stonith404)
+- show error message if error occurs while authorizing new client ([8038a11](https://github.com/pocket-id/pocket-id/commit/8038a111dd7fa8f5d421b29c3bc0c11d865dc71b) by @stonith404)
+
+### Features
+
+- add name claim to userinfo endpoint and id token ([4e7574a](https://github.com/pocket-id/pocket-id/commit/4e7574a297307395603267c7a3285d538d4111d8) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.4.0...v0.4.1
+
+## v0.4.0
+
+### Bug Fixes
+
+- oidc client logo not displayed on authorize page ([28ed064](https://github.com/pocket-id/pocket-id/commit/28ed064668afeec8f80adda59ba94f1fc2fbce17) by @stonith404)
+- typo in hasLogo property of oidc dto ([2b9413c](https://github.com/pocket-id/pocket-id/commit/2b9413c7575e1322f8547490a9b02a1836bad549) by @stonith404)
+- non pointer passed to create user ([e7861df](https://github.com/pocket-id/pocket-id/commit/e7861df95a6beecab359d1c56f4383373f74bb73) by @stonith404)
+
+### Features
+
+- add setup details to oidc client details ([fd21ce5](https://github.com/pocket-id/pocket-id/commit/fd21ce5aac1daeba04e4e7399a0720338ea710c2) by @stonith404)
+- add support for more username formats ([903b0b3](https://github.com/pocket-id/pocket-id/commit/903b0b39181c208e9411ee61849d2671e7c56dc5) by @stonith404)
+
+### Other
+
+- rename user service ([8e27320](https://github.com/pocket-id/pocket-id/commit/8e27320649334e632b6dc1bbd89125b9d2f01531) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.3.1...v0.4.0
+
+## v0.3.1
+
+### Bug Fixes
+
+- empty lists don't get returned correctly from the api ([97f7fc4](https://github.com/pocket-id/pocket-id/commit/97f7fc4e288c2bb49210072a7a151b58ef44f5b5) by @stonith404)
+
+### Other
+
+- upgrade dependencies ([fc47c2a](https://github.com/pocket-id/pocket-id/commit/fc47c2a2a4b01a9e97c6c81de06ffbba99f6e639) by @stonith404)
+- fix missing host in cleanup request ([6769cc8](https://github.com/pocket-id/pocket-id/commit/6769cc8c10bba3c7a06cc00b3b10a21424aa98c7) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.3.0...v0.3.1
+
+## v0.3.0
+
+### Bug Fixes
+
+- db migration for multiple callback urls ([552d7cc](https://github.com/pocket-id/pocket-id/commit/552d7ccfa58d7922ecb94bdfe6a86651b4cf2745) by @stonith404)
+
+### Documentation
+
+- add proxy guide ([9f49e55](https://github.com/pocket-id/pocket-id/commit/9f49e5577effb2417e2ab06d663e70c91d4dce35) by @stonith404)
+- compress screenshot in README ([16f273f](https://github.com/pocket-id/pocket-id/commit/16f273ffceeed5426f64146282ce76fbec150ad7) by @stonith404)
+
+### Features
+
+- add support for multiple callback urls ([8166e2e](https://github.com/pocket-id/pocket-id/commit/8166e2ead7fc71a0b7a45950b05c5c65a60833b6) by @stonith404)
+
+### Other
+
+- use dtos in controllers ([ae7aeb0](https://github.com/pocket-id/pocket-id/commit/ae7aeb0945c00aa9082d68790080faa077b63749) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.2.1...v0.3.0
+
+## v0.2.1
+
+### Bug Fixes
+
+- session duration can't be updated ([4780548](https://github.com/pocket-id/pocket-id/commit/478054884389ed8a08d707fd82da7b31177a67e5) by @stonith404)
+
+### Other
+
+- fix update general configuration test ([aaed71e](https://github.com/pocket-id/pocket-id/commit/aaed71e1c8d6884e0f13beaf4c6c29f3460efa13) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.2.0...v0.2.1
+
+## v0.2.0
+
+### Documentation
+
+- add Unraid to README ([b49063d](https://github.com/pocket-id/pocket-id/commit/b49063d692a36fc99d8565db1287385be6ebd2b5) by @stonith404)
+- add note that https is required ([74f4c22](https://github.com/pocket-id/pocket-id/commit/74f4c22800a4ef83df9b75de557cf2e624538901) by @stonith404)
+
+### Features
+
+- add `INTERNAL_BACKEND_URL` env variable ([0595d73](https://github.com/pocket-id/pocket-id/commit/0595d73ea5afbd7937b8f292ffe624139f818f41) by @stonith404)
+- add user info endpoint to support more oidc clients ([fdc1921](https://github.com/pocket-id/pocket-id/commit/fdc1921f5dcb5ac6beef8d1c9b1b7c53f514cce5) by @stonith404)
+- change default logo ([9eec7a3](https://github.com/pocket-id/pocket-id/commit/9eec7a3e9eb7f690099f38a5d4cf7c2516ea9ef9) by @stonith404)
+
+### Other
+
+- use dependency injection in backend ([601f6c4](https://github.com/pocket-id/pocket-id/commit/601f6c488a7b3c266a1d2174282ab3203841a6e5) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.1.3...v0.2.0
+
+## v0.1.3
+
+### Bug Fixes
+
+- logo not white in dark mode ([5749d05](https://github.com/pocket-id/pocket-id/commit/5749d0532fc38bf2fc66571878b7c71643895c9e) by @stonith404)
+- add missing passkey flags to make icloud passkeys work ([cc407e1](https://github.com/pocket-id/pocket-id/commit/cc407e17d409041ed88b959ce13bd581663d55c3) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.1.2...v0.1.3
+
+## v0.1.2
+
+### Bug Fixes
+
+- background image not loading ([7b44189](https://github.com/pocket-id/pocket-id/commit/7b4418958ebfffffd216ef5ba7313cfaad9bc9fa) by @stonith404)
+- a non admin user was able to make himself an admin ([df0cd38](https://github.com/pocket-id/pocket-id/commit/df0cd38deeea516c47b26a080eed522f19f7290f) by @stonith404)
+- disable search engine indexing ([8395492](https://github.com/pocket-id/pocket-id/commit/83954926f5ee328ebf75a75bb47b380ec0680378) by @stonith404)
+- background image on mobile ([4a808c8](https://github.com/pocket-id/pocket-id/commit/4a808c86ac204f9b58cfa02f5ceb064162a87076) by @stonith404)
+
+### Features
+
+- add option to change session duration ([475b932](https://github.com/pocket-id/pocket-id/commit/475b932f9d0ec029ada844072e9d89bebd4e902c) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.1.1...v0.1.2
+
+## v0.1.1
+
+### Bug Fixes
+
+- one time link not displayed correctly ([486771f](https://github.com/pocket-id/pocket-id/commit/486771f433872d08164156d5d6fb0aeb5ae0d125) by @stonith404)
+
+### Features
+
+- add rounded corners to logo ([bec908f](https://github.com/pocket-id/pocket-id/commit/bec908f9078aaa4eec03b730fc36b9fffb1ece74) by @stonith404)
+
+### Other
+
+- change docker image tag in `docker-compose.yml` ([bc86020](https://github.com/pocket-id/pocket-id/commit/bc860204e3e1041a77f0d6db70e38fad7dc6eac6) by @stonith404)
+- fix typo in docker image ([4534400](https://github.com/pocket-id/pocket-id/commit/4534400d41e55e4d94b17e27fc36ea47710eb7ad) by @stonith404)
+
+**Full Changelog**: https://github.com/pocket-id/pocket-id/compare/v0.1.0...v0.1.1
+
+## v0.1.0

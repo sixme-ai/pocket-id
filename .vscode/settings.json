@@ -1,0 +1,16 @@
+{
+  "go.buildTags": "e2etest unit",
+  "editor.defaultFormatter": "oxc.oxc-vscode",
+  "oxc.fmt.disableNestedConfig": true,
+  "[svelte]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[go]": {
+    "editor.defaultFormatter": "golang.go",
+    "editor.formatOnSave": true
+  },
+  "[go.mod]": {
+    "editor.defaultFormatter": "golang.go",
+    "editor.formatOnSave": true
+  }
+}

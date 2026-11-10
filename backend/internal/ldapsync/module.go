@@ -1,0 +1,100 @@
+package ldapsync
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"net/http"
+
+	francishost "github.com/italypaleale/francis/host"
+	"gorm.io/gorm"
+
+	"github.com/pocket-id/pocket-id/backend/internal/appconfig"
+	"github.com/pocket-id/pocket-id/backend/internal/authz"
+	"github.com/pocket-id/pocket-id/backend/internal/dto"
+	"github.com/pocket-id/pocket-id/backend/internal/httpserver"
+	"github.com/pocket-id/pocket-id/backend/internal/model"
+	"github.com/pocket-id/pocket-id/backend/internal/storage"
+)
+
+// UserSyncer applies the desired LDAP state to the users in the database
+// Every method takes the transaction the sync runs in, since users, groups, and memberships are reconciled atomically
+type UserSyncer interface {
+	CreateUserInternal(ctx context.Context, dbConfig *appconfig.AppConfigModel, input dto.UserCreateDto, isLdapSync bool, tx *gorm.DB) (model.User, error)
+	UpdateUserInternal(ctx context.Context, dbConfig *appconfig.AppConfigModel, userID string, input dto.UserCreateDto, updateOwnUser bool, isLdapSync bool, tx *gorm.DB) (model.User, error)
+	DisableUserInternal(ctx context.Context, tx *gorm.DB, userID string) error
+	DeleteUserInternal(ctx context.Context, dbConfig *appconfig.AppConfigModel, tx *gorm.DB, userID string, allowLdapDelete bool) error
+
+	// UpdateProfilePicture stores a user's profile picture, which happens after the transaction has been committed since it touches the storage layer
+	UpdateProfilePicture(ctx context.Context, userID string, file io.ReadSeeker) error
+}
+
+// GroupSyncer applies the desired LDAP state to the user groups in the database
+type GroupSyncer interface {
+	CreateInternal(ctx context.Context, input dto.UserGroupCreateDto, tx *gorm.DB) (model.UserGroup, error)
+	UpdateInternal(ctx context.Context, dbConfig *appconfig.AppConfigModel, id string, input dto.UserGroupCreateDto, isLdapSync bool, tx *gorm.DB) (model.UserGroup, error)
+	UpdateUsersInternal(ctx context.Context, id string, userIDs []string, tx *gorm.DB) (model.UserGroup, error)
+}
+
+// ScimSyncScheduler schedules SCIM after the LDAP transaction has committed
+type ScimSyncScheduler interface {
+	ScheduleSync(ctx context.Context)
+}
+
+// BackchannelLogoutNotifier tells OIDC clients to end their sessions for users the sync deprovisions
+type BackchannelLogoutNotifier interface {
+	// PrepareUserNotifications resolves the notifications within the sync transaction and returns a function that delivers them, which must only be called after the transaction has committed
+	PrepareUserNotifications(ctx context.Context, tx *gorm.DB, userIDs []string) (func(), error)
+
+	// NotifyLostGroupAccess delivers logout tokens to group-restricted clients the given users can no longer access, and must be called after the transaction has committed
+	// The sync passes an empty client ID, matching on the users alone
+	NotifyLostGroupAccess(ctx context.Context, userIDs []string, clientID string)
+}
+
+type Dependencies struct {
+	DB          *gorm.DB
+	Actors      francishost.Host
+	HTTPClient  *http.Client
+	FileStorage storage.FileStorage
+
+	Users             UserSyncer
+	Groups            GroupSyncer
+	AppConfig         appconfig.AppConfigResolver
+	ScimSync          ScimSyncScheduler
+	BackchannelLogout BackchannelLogoutNotifier
+
+	// ScheduleDisabled keeps the recurring sync from being armed
+	// It's set in the test environment, where syncs are driven explicitly by the end-to-end tests
+	ScheduleDisabled bool
+}
+
+type Module struct {
+	service *Service
+	handler *handler
+}
+
+func New(deps Dependencies) (*Module, error) {
+	service := newService(deps)
+
+	// Register the actor that drives the recurring sync
+	// It's a singleton, so the host bootstraps it at startup and the alarm fires once per cluster rather than once per replica
+	err := deps.Actors.RegisterSingletonActor(SyncActorType, NewSyncActor(service, deps.AppConfig, deps.ScheduleDisabled))
+	if err != nil {
+		return nil, fmt.Errorf("error registering the %s actor: %w", SyncActorType, err)
+	}
+
+	return &Module{
+		service: service,
+		handler: newHandler(service, deps.AppConfig),
+	}, nil
+}
+
+// RegisterRoutes mounts the manual LDAP synchronization endpoint
+func (m *Module) RegisterRoutes(r *authz.Router) {
+	r.POST("/application-configuration/sync-ldap", authz.ConfigWrite, httpserver.Handle(m.handler.syncLdap))
+}
+
+// SyncAll runs a full LDAP synchronization with the provided application configuration
+func (m *Module) SyncAll(ctx context.Context, dbConfig *appconfig.AppConfigModel) error {
+	return m.service.SyncAll(ctx, dbConfig)
+}

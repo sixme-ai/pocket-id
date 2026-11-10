@@ -1,0 +1,238 @@
+package usersignup
+
+import (
+	"context"
+	"errors"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
+	"github.com/pocket-id/pocket-id/backend/internal/appconfig"
+	"github.com/pocket-id/pocket-id/backend/internal/apperror"
+	"github.com/pocket-id/pocket-id/backend/internal/auditlogs"
+	"github.com/pocket-id/pocket-id/backend/internal/dto"
+	"github.com/pocket-id/pocket-id/backend/internal/model"
+	"github.com/pocket-id/pocket-id/backend/internal/utils"
+	testutils "github.com/pocket-id/pocket-id/backend/internal/utils/testing"
+)
+
+type fakeUserCreator struct {
+	err  error
+	user model.User
+}
+
+func (f fakeUserCreator) CreateUserInternal(_ context.Context, _ *appconfig.AppConfigModel, _ dto.UserCreateDto, _ bool, _ *gorm.DB) (model.User, error) {
+	if f.err != nil {
+		return model.User{}, f.err
+	}
+	return f.user, nil
+}
+
+// dbUserCreator stores the user in the signup transaction, so changes made later in that transaction can be asserted
+type dbUserCreator struct{}
+
+func (dbUserCreator) CreateUserInternal(_ context.Context, _ *appconfig.AppConfigModel, input dto.UserCreateDto, _ bool, tx *gorm.DB) (model.User, error) {
+	user := model.User{Username: input.Username, Email: input.Email, EmailVerified: input.EmailVerified}
+	err := tx.Create(&user).Error
+	return user, err
+}
+
+type fakeEmailVerificationSender struct {
+	err     error
+	userIDs []string
+}
+
+func (f *fakeEmailVerificationSender) Send(_ context.Context, _ *appconfig.AppConfigModel, userID string) error {
+	f.userIDs = append(f.userIDs, userID)
+	return f.err
+}
+
+type fakeSigner struct{}
+
+func (fakeSigner) GenerateAccessToken(_ model.User, _ string, _ time.Duration) (string, error) {
+	return "access-token", nil
+}
+
+type fakeAuditLogger struct{}
+
+func (fakeAuditLogger) Create(_ context.Context, _ auditlogs.Event, _, _, _ string, _ auditlogs.Data, _ *gorm.DB) (auditlogs.AuditLog, bool) {
+	return auditlogs.AuditLog{}, true
+}
+
+func newSignupServiceForTest(t *testing.T, db *gorm.DB, userCreator UserCreator) *Service {
+	t.Helper()
+	actorService := newSignupTokenActorService(t)
+	return newService(Dependencies{
+		DB:          db,
+		UserCreator: userCreator,
+		Signer:      fakeSigner{},
+		AuditLog:    fakeAuditLogger{},
+	}, actorService)
+}
+
+func signupTokenUsageCount(t *testing.T, svc *Service, tokenID string) int {
+	t.Helper()
+	tokens, _, err := svc.ListSignupTokens(t.Context(), listAllOptions())
+	require.NoError(t, err)
+	for _, tok := range tokens {
+		if tok.ID == tokenID {
+			return tok.UsageCount
+		}
+	}
+	t.Fatalf("signup token %q not found", tokenID)
+	return 0
+}
+
+func TestSignUpConsumesTokenOnSuccess(t *testing.T) {
+	db := testutils.NewDatabaseForTest(t)
+	svc := newSignupServiceForTest(t, db, fakeUserCreator{user: model.User{Base: model.Base{ID: "new-user"}}})
+
+	token, err := svc.CreateSignupToken(t.Context(), time.Hour, 2, nil)
+	require.NoError(t, err)
+
+	config := appconfig.NewTestConfig(nil)
+	user, accessToken, err := svc.SignUp(t.Context(), config, signUpDto{
+		Username: "newuser",
+		Token:    token.Token,
+	}, "1.2.3.4", "test-agent")
+	require.NoError(t, err)
+	require.Equal(t, "new-user", user.ID)
+	require.Equal(t, "access-token", accessToken)
+
+	// The token's usage count must have been incremented and not rolled back
+	require.Equal(t, 1, signupTokenUsageCount(t, svc, token.ID))
+}
+
+func TestSignUpCompensatesTokenOnFailure(t *testing.T) {
+	db := testutils.NewDatabaseForTest(t)
+	boom := errors.New("could not create user")
+	svc := newSignupServiceForTest(t, db, fakeUserCreator{err: boom})
+
+	token, err := svc.CreateSignupToken(t.Context(), time.Hour, 2, nil)
+	require.NoError(t, err)
+
+	config := appconfig.NewTestConfig(nil)
+	_, _, err = svc.SignUp(t.Context(), config, signUpDto{
+		Username: "newuser",
+		Token:    token.Token,
+	}, "1.2.3.4", "test-agent")
+	require.ErrorIs(t, err, boom)
+
+	// The usage count increment must have been compensated (reverted back to 0)
+	require.Equal(t, 0, signupTokenUsageCount(t, svc, token.ID))
+}
+
+func TestSignUpRejectsInvalidToken(t *testing.T) {
+	db := testutils.NewDatabaseForTest(t)
+	svc := newSignupServiceForTest(t, db, fakeUserCreator{user: model.User{Base: model.Base{ID: "new-user"}}})
+
+	config := appconfig.NewTestConfig(nil)
+	_, _, err := svc.SignUp(t.Context(), config, signUpDto{
+		Username: "newuser",
+		Token:    "not-a-real-token",
+	}, "1.2.3.4", "test-agent")
+
+	require.True(t, apperror.IsCode(err, apperror.CodeTokenInvalidOrExpired))
+}
+
+func TestSignUpInitialAdminCreatesAdmin(t *testing.T) {
+	db := testutils.NewDatabaseForTest(t)
+	svc := newSignupServiceForTest(t, db, fakeUserCreator{user: model.User{Base: model.Base{ID: "new-admin"}}})
+	config := appconfig.NewTestConfig(nil)
+
+	// Complete setup and return the generated administrator session
+	user, accessToken, err := svc.SignUpInitialAdmin(t.Context(), config, signUpDto{Username: "new-admin"})
+	require.NoError(t, err)
+	require.Equal(t, "new-admin", user.ID)
+	require.Equal(t, "access-token", accessToken)
+}
+
+func TestSignUpInitialAdminAllowsRetryAfterFailure(t *testing.T) {
+	db := testutils.NewDatabaseForTest(t)
+	boom := errors.New("could not create initial admin")
+	svc := newSignupServiceForTest(t, db, fakeUserCreator{err: boom})
+	config := appconfig.NewTestConfig(nil)
+
+	// Fail the first setup transaction before it can commit
+	_, _, err := svc.SignUpInitialAdmin(t.Context(), config, signUpDto{Username: "failed-admin"})
+	require.ErrorIs(t, err, boom)
+
+	// Confirm a later setup can complete after the failed transaction rolls back
+	svc.userCreator = fakeUserCreator{user: model.User{Base: model.Base{ID: "new-admin"}}}
+	user, _, err := svc.SignUpInitialAdmin(t.Context(), config, signUpDto{Username: "new-admin"})
+	require.NoError(t, err)
+	require.Equal(t, "new-admin", user.ID)
+}
+
+func TestSignUpInitialAdminRejectsExistingInstallation(t *testing.T) {
+	db := testutils.NewDatabaseForTest(t)
+	require.NoError(t, db.Create(&model.User{Username: "existing-admin", IsAdmin: true}).Error)
+	svc := newSignupServiceForTest(t, db, fakeUserCreator{user: model.User{Base: model.Base{ID: "new-admin"}}})
+
+	// Reject setup when the installation already contains a user
+	_, _, err := svc.SignUpInitialAdmin(t.Context(), appconfig.NewTestConfig(nil), signUpDto{Username: "new-admin"})
+	require.True(t, apperror.IsCode(err, apperror.CodeSetupAlreadyCompleted))
+}
+
+// listAllOptions returns list options that return every token on a single page.
+func listAllOptions() utils.ListRequestOptions {
+	var opts utils.ListRequestOptions
+	opts.Pagination.Page = 1
+	opts.Pagination.Limit = 100
+	return opts
+}
+
+func TestSignUpRequiresEmailVerification(t *testing.T) {
+	signUp := func(t *testing.T, mode string, sender *fakeEmailVerificationSender) (*gorm.DB, model.User) {
+		t.Helper()
+
+		db := testutils.NewDatabaseForTest(t)
+		svc := newSignupServiceForTest(t, db, dbUserCreator{})
+		svc.emailVerification = sender
+
+		config := appconfig.NewTestConfig(nil)
+		config.AllowUserSignups = "open"
+		config.EmailVerification = appconfig.AppConfigValue(mode)
+		user, _, err := svc.SignUp(t.Context(), config, signUpDto{
+			Username: "newuser",
+			Email:    new("newuser@example.com"),
+		}, "1.2.3.4", "test-agent")
+		require.NoError(t, err)
+
+		return db, user
+	}
+
+	t.Run("sets a deadline and sends the verification email when verification is required", func(t *testing.T) {
+		sender := &fakeEmailVerificationSender{}
+		before := time.Now()
+		db, user := signUp(t, appconfig.EmailVerificationRequired, sender)
+
+		require.NotNil(t, user.EmailVerificationDeadline)
+		require.WithinDuration(t, before.Add(24*time.Hour), user.EmailVerificationDeadline.ToTime(), time.Minute)
+
+		var stored model.User
+		require.NoError(t, db.First(&stored, "id = ?", user.ID).Error)
+		require.NotNil(t, stored.EmailVerificationDeadline)
+		require.Equal(t, []string{user.ID}, sender.userIDs)
+	})
+
+	t.Run("keeps the account without a deadline when verification is optional", func(t *testing.T) {
+		sender := &fakeEmailVerificationSender{}
+		db, user := signUp(t, appconfig.EmailVerificationOptional, sender)
+
+		var stored model.User
+		require.NoError(t, db.First(&stored, "id = ?", user.ID).Error)
+		require.Nil(t, stored.EmailVerificationDeadline)
+		require.Empty(t, sender.userIDs)
+	})
+
+	t.Run("a failed delivery does not fail the signup", func(t *testing.T) {
+		sender := &fakeEmailVerificationSender{err: errors.New("smtp unavailable")}
+		_, user := signUp(t, appconfig.EmailVerificationRequired, sender)
+
+		require.NotNil(t, user.EmailVerificationDeadline)
+		require.Equal(t, []string{user.ID}, sender.userIDs)
+	})
+}

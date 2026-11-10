@@ -1,0 +1,10 @@
+{
+	"compilerOptions": {
+		"paths": { "*": ["./*"] },
+		"lib": ["ES2022"],
+		"esModuleInterop": true,
+		"module": "es2022",
+		"moduleResolution": "bundler",
+		"target": "es2022"
+	}
+}

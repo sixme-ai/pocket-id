@@ -1,0 +1,25 @@
+{
+  "name": "pocket-id",
+  "image": "ghcr.io/voidzero-dev/vite-plus:1.0.0",
+  "features": {
+    "ghcr.io/devcontainers/features/go:1": {
+      "version": "1.27.3"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "svelte.svelte-vscode",
+        "bradlc.vscode-tailwindcss",
+        "oxc.oxc-vscode",
+        "VoidZero.vite-plus-extension-pack"
+      ]
+    }
+  },
+  "containerEnv": {
+    "HOST": "0.0.0.0"
+  },
+  "remoteUser": "vp",
+  "postCreateCommand": "vp install && cd backend && go mod download"
+}

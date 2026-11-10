@@ -1,0 +1,499 @@
+package oidc
+
+import (
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/rsa"
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/lestrrat-go/jwx/v4/jwa"
+	"github.com/pocket-id/fosite"
+	fositeoauth2 "github.com/pocket-id/fosite/handler/oauth2"
+	"github.com/pocket-id/pocket-id/backend/internal/model"
+	datatype "github.com/pocket-id/pocket-id/backend/internal/model/types"
+	testutils "github.com/pocket-id/pocket-id/backend/internal/utils/testing"
+	"github.com/stretchr/testify/require"
+)
+
+type testTokenSigner struct {
+	key *ecdsa.PrivateKey
+}
+
+func (s testTokenSigner) GetPrivateKey() any {
+	return s.key
+}
+
+func (s testTokenSigner) GetKeyAlg() (jwa.KeyAlgorithm, error) {
+	return jwa.ES256(), nil
+}
+
+func (s testTokenSigner) GetKeyID() (string, bool) {
+	return "test-key-id", true
+}
+
+func TestDeriveGlobalSecretUsesStableValue(t *testing.T) {
+	masterSecret := []byte("test-secret")
+
+	expectedHex := "82de1690a30923a038d722a72e9599087484732bf9c1e8af5fc620f8fa87c08b"
+	expected, err := hex.DecodeString(expectedHex)
+	require.NoError(t, err)
+
+	actual, err := DeriveGlobalSecret(masterSecret)
+	require.NoError(t, err)
+	require.Equal(t, expected, actual)
+}
+
+func TestProviderIssuesJWTAccessTokens(t *testing.T) {
+	db := testutils.NewDatabaseForTest(t)
+	signerKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+
+	// #nosec G101
+	provider, err := newProvider(NewStore(db, nil), nil, testTokenSigner{key: signerKey}, Config{
+		BaseURL:      "https://issuer.example.com",
+		TokenBaseURL: "https://issuer.example.com",
+		Secret:       []byte("test-secret"),
+	}, nil)
+	require.NoError(t, err)
+
+	session := NewEmptySession()
+	session.Subject = "test-user"
+	session.SetExpiresAt(fosite.AccessToken, time.Now().UTC().Add(time.Hour))
+
+	request := fosite.NewAccessRequest(session)
+	request.ID = "test-request"
+	request.Client = Client{OidcClient: model.OidcClient{Base: model.Base{ID: "test-client"}}}
+	request.GrantTypes = fosite.Arguments{string(fosite.GrantTypeClientCredentials)}
+	request.RequestedScope = fosite.Arguments{"read:orders"}
+	request.GrantedScope = fosite.Arguments{"read:orders"}
+	request.RequestedAudience = fosite.Arguments{"https://api.orders.example.com"}
+	request.GrantedAudience = fosite.Arguments{"https://api.orders.example.com"}
+
+	response, err := provider.NewAccessResponse(t.Context(), request)
+	require.NoError(t, err)
+	require.Len(t, strings.Split(response.GetAccessToken(), "."), 3)
+
+	header := decodeJWTPart(t, response.GetAccessToken(), 0)
+	claims := decodeJWTPart(t, response.GetAccessToken(), 1)
+
+	// The access token header explicitly distinguishes RFC 9068 access tokens from other JWT types
+	require.Equal(t, fositeoauth2.RFC9068JWTType, header["typ"])
+	require.Equal(t, "test-key-id", header["kid"])
+	require.Equal(t, "ES256", header["alg"])
+
+	// The payload carries every claim required by RFC 9068 section 2.2
+	require.Equal(t, "https://issuer.example.com", claims["iss"])
+	require.Equal(t, "test-user", claims["sub"])
+	require.Equal(t, "test-client", claims["client_id"])
+	require.Equal(t, []string{"https://api.orders.example.com"}, jwtAudience(claims))
+	require.Equal(t, "read:orders", claims["scope"])
+	require.NotEmpty(t, claims["jti"])
+	require.NotZero(t, claims["iat"])
+	require.NotZero(t, claims["exp"])
+	require.NotContains(t, claims, "azp")
+}
+
+func TestRedirectSecureChecker(t *testing.T) {
+	loopbackRedirectURI, err := url.Parse("http://127.0.0.1:49813/callback")
+	require.NoError(t, err)
+
+	checker := redirectSecureChecker(false)
+	require.True(t, checker(t.Context(), loopbackRedirectURI))
+}
+
+func TestProviderInsecureCallbackURLCompatibility(t *testing.T) {
+	tests := []struct {
+		name                      string
+		allowInsecureCallbackURLs bool
+		expectSuccess             bool
+	}{
+		{
+			name:                      "allows HTTP callback URLs when compatibility is enabled",
+			allowInsecureCallbackURLs: true,
+			expectSuccess:             true,
+		},
+		{
+			name:                      "rejects HTTP callback URLs when compatibility is disabled",
+			allowInsecureCallbackURLs: false,
+			expectSuccess:             false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := testutils.NewDatabaseForTest(t)
+			signerKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+			require.NoError(t, err)
+			require.NoError(t, db.Create(&model.OidcClient{
+				Base:         model.Base{ID: "test-client"},
+				Name:         "Test Client",
+				CallbackURLs: datatype.StringList{"http://client.example.com/callback"},
+			}).Error)
+
+			// #nosec G101
+			provider, err := newProvider(NewStore(db, nil), nil, testTokenSigner{key: signerKey}, Config{
+				BaseURL:                   "https://issuer.example.com",
+				TokenBaseURL:              "https://issuer.example.com",
+				Secret:                    []byte("test-secret"),
+				AllowInsecureCallbackURLs: tt.allowInsecureCallbackURLs,
+			}, nil)
+			require.NoError(t, err)
+
+			req := httptest.NewRequestWithContext(
+				t.Context(),
+				http.MethodGet,
+				"/api/oidc/authorize?client_id=test-client&response_type=code&scope=openid&state=state-with-enough-entropy&redirect_uri=http://client.example.com/callback",
+				nil,
+			)
+			authorizeRequest, err := provider.NewAuthorizeRequest(req.Context(), req)
+			require.NoError(t, err)
+
+			_, err = provider.NewAuthorizeResponse(t.Context(), authorizeRequest, NewEmptySession())
+			if tt.expectSuccess {
+				require.NoError(t, err)
+			} else {
+				require.ErrorIs(t, err, fosite.ErrInvalidRequest)
+			}
+		})
+	}
+}
+
+func TestProviderAcceptsWildcardRedirectURI(t *testing.T) {
+	db := testutils.NewDatabaseForTest(t)
+	signerKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	require.NoError(t, db.Create(&model.OidcClient{
+		Base:         model.Base{ID: "test-client"},
+		Name:         "Test Client",
+		CallbackURLs: datatype.StringList{"https://*.example.com/callback"},
+	}).Error)
+
+	// #nosec G101
+	provider, err := newProvider(NewStore(db, nil), nil, testTokenSigner{key: signerKey}, Config{
+		BaseURL:      "https://issuer.example.com",
+		TokenBaseURL: "https://issuer.example.com",
+		Secret:       []byte("test-secret"),
+	}, nil)
+	require.NoError(t, err)
+
+	const requestedRedirectURI = "https://tenant.example.com/callback"
+	req := httptest.NewRequestWithContext(
+		t.Context(),
+		http.MethodGet,
+		"/api/oidc/authorize?client_id=test-client&response_type=code&scope=openid&state=state-with-enough-entropy&redirect_uri="+requestedRedirectURI,
+		nil,
+	)
+
+	ar, err := provider.NewAuthorizeRequest(req.Context(), req)
+	require.NoError(t, err)
+	require.Equal(t, requestedRedirectURI, ar.GetRedirectURI().String())
+	require.True(t, ar.IsRedirectURIValid())
+	require.NotContains(t, ar.GetClient().GetRedirectURIs(), requestedRedirectURI)
+}
+
+func TestProviderAcceptsPushedAuthorizationWildcardRedirectURI(t *testing.T) {
+	db := testutils.NewDatabaseForTest(t)
+	signerKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	require.NoError(t, db.Create(&model.OidcClient{
+		Base:         model.Base{ID: "test-client"},
+		Name:         "Test Client",
+		CallbackURLs: datatype.StringList{"https://*.example.com/callback"},
+		IsPublic:     true,
+	}).Error)
+
+	// #nosec G101
+	provider, err := newProvider(NewStore(db, nil), nil, testTokenSigner{key: signerKey}, Config{
+		BaseURL:      "https://issuer.example.com",
+		TokenBaseURL: "https://issuer.example.com",
+		Secret:       []byte("test-secret"),
+	}, nil)
+	require.NoError(t, err)
+
+	const requestedRedirectURI = "https://tenant.example.com/callback"
+	req := httptest.NewRequestWithContext(
+		t.Context(),
+		http.MethodPost,
+		"/api/oidc/par?client_id=test-client&response_type=code&scope=openid&state=state-with-enough-entropy&redirect_uri="+requestedRedirectURI,
+		nil,
+	)
+
+	ar, err := provider.NewPushedAuthorizeRequest(req.Context(), req)
+	require.NoError(t, err)
+	require.Equal(t, requestedRedirectURI, ar.GetRedirectURI().String())
+	require.True(t, ar.IsRedirectURIValid())
+	require.NotContains(t, ar.GetClient().GetRedirectURIs(), requestedRedirectURI)
+}
+
+func TestProviderRejectsUnmatchedWildcardRedirectURI(t *testing.T) {
+	db := testutils.NewDatabaseForTest(t)
+	signerKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	require.NoError(t, db.Create(&model.OidcClient{
+		Base:         model.Base{ID: "test-client"},
+		Name:         "Test Client",
+		CallbackURLs: datatype.StringList{"https://*.example.com/callback"},
+	}).Error)
+
+	// #nosec G101
+	provider, err := newProvider(NewStore(db, nil), nil, testTokenSigner{key: signerKey}, Config{
+		BaseURL:      "https://issuer.example.com",
+		TokenBaseURL: "https://issuer.example.com",
+		Secret:       []byte("test-secret"),
+	}, nil)
+	require.NoError(t, err)
+
+	const requestedRedirectURI = "https://evil.example.net/callback"
+	req := httptest.NewRequestWithContext(
+		t.Context(),
+		http.MethodGet,
+		"/api/oidc/authorize?client_id=test-client&response_type=code&scope=openid&state=state-with-enough-entropy&redirect_uri="+requestedRedirectURI,
+		nil,
+	)
+
+	_, err = provider.NewAuthorizeRequest(req.Context(), req)
+	require.ErrorIs(t, err, fosite.ErrInvalidRequest)
+}
+
+// encodeRequestObject builds a compact JWS request object from the given header and claims,
+// with an empty signature segment (as used by unsigned "alg": "none" request objects).
+func encodeRequestObject(t *testing.T, header map[string]any, claims map[string]any) string {
+	t.Helper()
+	headerJSON, err := json.Marshal(header)
+	require.NoError(t, err)
+	claimsJSON, err := json.Marshal(claims)
+	require.NoError(t, err)
+	return base64.RawURLEncoding.EncodeToString(headerJSON) + "." + base64.RawURLEncoding.EncodeToString(claimsJSON) + "."
+}
+
+func TestProviderAcceptsUnsignedRequestObject(t *testing.T) {
+	db := testutils.NewDatabaseForTest(t)
+	signerKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	require.NoError(t, db.Create(&model.OidcClient{
+		Base:         model.Base{ID: "test-client"},
+		Name:         "Test Client",
+		CallbackURLs: datatype.StringList{"https://client.example.com/callback"},
+	}).Error)
+
+	// #nosec G101
+	provider, err := newProvider(NewStore(db, nil), nil, testTokenSigner{key: signerKey}, Config{
+		BaseURL:      "https://issuer.example.com",
+		TokenBaseURL: "https://issuer.example.com",
+		Secret:       []byte("test-secret"),
+	}, nil)
+	require.NoError(t, err)
+
+	requestObject := encodeRequestObject(t,
+		map[string]any{"alg": "none"},
+		map[string]any{
+			"client_id":    "test-client",
+			"redirect_uri": "https://client.example.com/callback",
+			"nonce":        "nonce-from-request-object",
+			"max_age":      300,
+		},
+	)
+
+	req := httptest.NewRequestWithContext(
+		t.Context(),
+		http.MethodGet,
+		"/api/oidc/authorize?client_id=test-client&response_type=code&scope=openid&state=state-with-enough-entropy&request="+requestObject,
+		nil,
+	)
+
+	ar, err := provider.NewAuthorizeRequest(req.Context(), req)
+	require.NoError(t, err)
+	require.Equal(t, "https://client.example.com/callback", ar.GetRedirectURI().String())
+	require.Equal(t, "nonce-from-request-object", ar.GetRequestForm().Get("nonce"))
+	require.Equal(t, "300", ar.GetRequestForm().Get("max_age"))
+}
+
+func TestProviderRejectsSignedRequestObject(t *testing.T) {
+	db := testutils.NewDatabaseForTest(t)
+	signerKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	require.NoError(t, db.Create(&model.OidcClient{
+		Base:         model.Base{ID: "test-client"},
+		Name:         "Test Client",
+		CallbackURLs: datatype.StringList{"https://client.example.com/callback"},
+	}).Error)
+
+	// #nosec G101
+	provider, err := newProvider(NewStore(db, nil), nil, testTokenSigner{key: signerKey}, Config{
+		BaseURL:      "https://issuer.example.com",
+		TokenBaseURL: "https://issuer.example.com",
+		Secret:       []byte("test-secret"),
+	}, nil)
+	require.NoError(t, err)
+
+	// The signature is never verified: the request object must already be rejected because only
+	// "none" is a supported request object signing algorithm.
+	requestObject := encodeRequestObject(t,
+		map[string]any{"alg": "RS256"},
+		map[string]any{"redirect_uri": "https://client.example.com/callback"},
+	) + base64.RawURLEncoding.EncodeToString([]byte("signature"))
+
+	req := httptest.NewRequestWithContext(
+		t.Context(),
+		http.MethodGet,
+		"/api/oidc/authorize?client_id=test-client&response_type=code&scope=openid&state=state-with-enough-entropy&request="+requestObject,
+		nil,
+	)
+
+	_, err = provider.NewAuthorizeRequest(req.Context(), req)
+	require.ErrorIs(t, err, fosite.ErrInvalidRequestObject)
+	// Pin the rejection to the SupportedRequestObjectSigningAlgorithms allowlist: a signed object
+	// would also fail with invalid_request_object for other reasons, e.g. missing client JWKS.
+	require.Contains(t, fosite.ErrorToRFC6749Error(err).Reason(), "the authorization server only supports [none]")
+}
+
+// decodeJWTPart base64url-decodes the header (index 0) or claims (index 1) segment of a
+// JWT without verifying the signature, for assertions in tests.
+func decodeJWTPart(t *testing.T, token string, index int) map[string]any {
+	t.Helper()
+	parts := strings.Split(token, ".")
+	require.Len(t, parts, 3)
+	raw, err := base64.RawURLEncoding.DecodeString(parts[index])
+	require.NoError(t, err)
+	var out map[string]any
+	require.NoError(t, json.Unmarshal(raw, &out))
+	return out
+}
+
+type algTestSigner struct {
+	key any
+	alg jwa.KeyAlgorithm
+}
+
+func (s algTestSigner) GetPrivateKey() any                   { return s.key }
+func (s algTestSigner) GetKeyAlg() (jwa.KeyAlgorithm, error) { return s.alg, nil }
+func (s algTestSigner) GetKeyID() (string, bool)             { return "test-key-id", true }
+
+// TestProviderIssuesAndValidatesTokensForSupportedAlgorithms guards against the
+// regression where fosite's DefaultSigner derived the JWT algorithm from the Go key type
+// alone: it broke EdDSA/ES384/ES512 token issuance entirely and silently downgraded
+// RS384/RS512 to RS256. The provider must both ISSUE (NewAccessResponse) and VALIDATE
+// (IntrospectToken -> Signer.Decode, the path used by introspection and userinfo) tokens
+// for every signing algorithm Pocket ID supports.
+func TestProviderIssuesAndValidatesTokensForSupportedAlgorithms(t *testing.T) {
+	cases := []struct {
+		name string
+		alg  jwa.KeyAlgorithm
+		gen  func(t *testing.T) any
+	}{
+		{"RS256", jwa.RS256(), generateRSATestKey},
+		{"RS384", jwa.RS384(), generateRSATestKey},
+		{"RS512", jwa.RS512(), generateRSATestKey},
+		{"ES256", jwa.ES256(), func(t *testing.T) any { return generateECTestKey(t, elliptic.P256()) }},
+		{"ES384", jwa.ES384(), func(t *testing.T) any { return generateECTestKey(t, elliptic.P384()) }},
+		{"ES512", jwa.ES512(), func(t *testing.T) any { return generateECTestKey(t, elliptic.P521()) }},
+		{"EdDSA", jwa.EdDSA(), generateEd25519TestKey},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			db := testutils.NewDatabaseForTest(t)
+			require.NoError(t, db.Create(&model.OidcClient{Base: model.Base{ID: "test-client"}, Name: "Test Client"}).Error)
+
+			// #nosec G101
+			provider, err := newProvider(NewStore(db, nil), nil, algTestSigner{key: tc.gen(t), alg: tc.alg}, Config{
+				BaseURL:      "https://issuer.example.com",
+				TokenBaseURL: "https://issuer.example.com",
+				Secret:       []byte("test-secret"),
+			}, nil)
+			require.NoError(t, err)
+
+			session := NewEmptySession()
+			session.Subject = "test-user"
+			session.SetExpiresAt(fosite.AccessToken, time.Now().UTC().Add(time.Hour))
+
+			request := fosite.NewAccessRequest(session)
+			request.ID = "test-request-" + tc.name
+			request.Client = Client{OidcClient: model.OidcClient{Base: model.Base{ID: "test-client"}}}
+			request.GrantTypes = fosite.Arguments{string(fosite.GrantTypeClientCredentials)}
+			request.RequestedScope = fosite.Arguments{"openid"}
+			request.GrantedScope = fosite.Arguments{"openid"}
+			request.RequestedAudience = fosite.Arguments{"test-client"}
+			request.GrantedAudience = fosite.Arguments{"test-client"}
+
+			response, err := provider.NewAccessResponse(t.Context(), request)
+			require.NoError(t, err)
+
+			accessToken := response.GetAccessToken()
+			require.Len(t, strings.Split(accessToken, "."), 3)
+			header := decodeJWTPart(t, accessToken, 0)
+			require.Equal(t, tc.alg.String(), header["alg"])
+			require.Equal(t, fositeoauth2.RFC9068JWTType, header["typ"])
+			claims := decodeJWTPart(t, accessToken, 1)
+			require.Equal(t, "test-client", claims["client_id"])
+
+			tokenUse, introspected, err := provider.IntrospectToken(t.Context(), accessToken, fosite.AccessToken, NewEmptySession())
+			require.NoError(t, err)
+			require.Equal(t, fosite.AccessToken, tokenUse)
+			require.Equal(t, "test-client", introspected.GetClient().GetID())
+		})
+	}
+}
+
+func generateRSATestKey(t *testing.T) any {
+	t.Helper()
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	return key
+}
+
+func generateECTestKey(t *testing.T, curve elliptic.Curve) any {
+	t.Helper()
+	key, err := ecdsa.GenerateKey(curve, rand.Reader)
+	require.NoError(t, err)
+	return key
+}
+
+func generateEd25519TestKey(t *testing.T) any {
+	t.Helper()
+	_, key, err := ed25519.GenerateKey(rand.Reader)
+	require.NoError(t, err)
+	return key
+}
+
+func TestProviderIgnoresUnknownScopes(t *testing.T) {
+	db := testutils.NewDatabaseForTest(t)
+	signerKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	require.NoError(t, db.Create(&model.OidcClient{
+		Base:         model.Base{ID: "test-client"},
+		Name:         "Test Client",
+		CallbackURLs: datatype.StringList{"https://app.example.com/callback"},
+	}).Error)
+
+	// #nosec G101
+	provider, err := newProvider(NewStore(db, nil), nil, testTokenSigner{key: signerKey}, Config{
+		BaseURL:      "https://issuer.example.com",
+		TokenBaseURL: "https://issuer.example.com",
+		Secret:       []byte("test-secret"),
+	}, nil)
+	require.NoError(t, err)
+
+	// Clients such as MCP clients blindly request scopes Pocket ID does not support, like
+	// "phone". These are dropped instead of failing the request with invalid_scope.
+	req := httptest.NewRequestWithContext(
+		t.Context(),
+		http.MethodGet,
+		"/api/oidc/authorize?client_id=test-client&response_type=code&scope=openid+email+phone&state=state-with-enough-entropy&redirect_uri=https://app.example.com/callback",
+		nil,
+	)
+
+	ar, err := provider.NewAuthorizeRequest(req.Context(), req)
+	require.NoError(t, err)
+	require.Equal(t, fosite.Arguments{"openid", "email"}, ar.GetRequestedScopes())
+}

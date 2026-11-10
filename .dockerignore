@@ -1,0 +1,22 @@
+**/node_modules
+
+# Output
+.output
+.vercel
+/frontend/.svelte-kit
+/frontend/build
+/backend/bin
+/backend/frontend/dist
+/tests/.auth
+/tests/.report
+
+
+# Env
+.env
+.env.*
+
+
+# Application specific
+data
+/scripts/development
+/backend/GeoLite2-City.mmdb

@@ -1,0 +1,266 @@
+package dto
+
+import (
+	"testing"
+
+	"github.com/gin-gonic/gin/binding"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestTokenDurationValidation(t *testing.T) {
+	type input struct {
+		Duration int64 `binding:"omitempty,token_duration"`
+	}
+
+	for _, test := range []struct {
+		name    string
+		value   int64
+		wantErr bool
+	}{
+		{name: "omitted (default)"},
+		{name: "negative", value: -1, wantErr: true},
+		{name: "minimum", value: 1},
+		{name: "custom duration", value: 90},
+		{name: "maximum", value: 365 * 24 * 60},
+		{name: "above maximum", value: 365*24*60 + 1, wantErr: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := binding.Validator.ValidateStruct(input{Duration: test.value})
+			if test.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestAppConfigJSONValidation(t *testing.T) {
+	tests := []struct {
+		name  string
+		valid bool
+	}{
+		{
+			name:  "valid string array",
+			valid: validateJSONStringArray(`["group-id"]`),
+		},
+		{
+			name:  "valid custom claims",
+			valid: validateJSONCustomClaims(`[{"key":"role","value":"user"}]`),
+		},
+		{
+			name:  "valid CIMD URL allowlist",
+			valid: validateCIMDURLAllowlist(`["https://app.example.com/**"]`),
+		},
+		{
+			name:  "custom claims object instead of array",
+			valid: !validateJSONCustomClaims(`{"key":"role","value":"user"}`),
+		},
+		{
+			name:  "custom claim missing key",
+			valid: !validateJSONCustomClaims(`[{"value":"user"}]`),
+		},
+		{
+			name:  "non-string group ID",
+			valid: !validateJSONStringArray(`[42]`),
+		},
+		{
+			name:  "null array",
+			valid: !validateJSONCustomClaims(`null`),
+		},
+		{
+			name:  "unsafe CIMD pattern",
+			valid: !validateCIMDURLAllowlist(`["data:text/html,test"]`),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assert.True(t, test.valid)
+		})
+	}
+}
+
+func TestAppConfigValueTypeValidation(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		valid bool
+	}{
+		{name: "true boolean", valid: validateBooleanString("true")},
+		{name: "false boolean", valid: validateBooleanString("false")},
+		{name: "non-boolean word", valid: !validateBooleanString("hello")},
+		{name: "numeric boolean", valid: !validateBooleanString("1")},
+		{name: "integer", valid: validateIntegerString("60")},
+		{name: "negative integer", valid: validateIntegerString("-1")},
+		{name: "decimal", valid: !validateIntegerString("1.5")},
+		{name: "non-integer word", valid: !validateIntegerString("hello")},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			assert.True(t, test.valid)
+		})
+	}
+}
+
+func TestValidateUsername(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		{"valid simple", "user123", true},
+		{"valid with dot", "user.name", true},
+		{"valid with underscore", "user_name", true},
+		{"valid with hyphen", "user-name", true},
+		{"valid with at", "user@name", true},
+		{"starts with symbol", ".username", false},
+		{"ends with non-alphanumeric", "username-", false},
+		{"contains space", "user name", false},
+		{"valid single char", "a", true},
+		{"empty", "", false},
+		{"only special chars", "-._@", false},
+		{"valid long", "a1234567890_b.c-d@e", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, ValidateUsername(tt.input))
+		})
+	}
+}
+
+func TestValidateClientID(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		{"valid simple", "client123", true},
+		{"valid with dot", "client.id", true},
+		{"valid with underscore", "client_id", true},
+		{"valid with hyphen", "client-id", true},
+		{"valid with all", "client.id-123_abc", true},
+		{"contains space", "client id", false},
+		{"contains at", "client@id", false},
+		{"empty", "", false},
+		{"only special chars", "-._", true},
+		{"invalid char", "client!id", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, ValidateClientID(tt.input))
+		})
+	}
+}
+
+func TestValidateResourceURI(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		{"valid https URI", "https://api.example.com", true},
+		{"valid custom scheme URI", "api://PocketID", true},
+		{"valid URN", "urn:my-app", true},
+		{"valid query component", "https://api.example.com?tenant=1", true},
+		{"invalid relative path", "/foo", false},
+		{"invalid plain string", "foo", false},
+		{"invalid fragment", "https://api.example.com#tokens", false},
+		{"invalid empty fragment", "https://api.example.com#", false},
+		{"invalid unescaped path space", "https://api.example.com/a b", false},
+		{"invalid unescaped opaque space", "urn:my app", false},
+		{"invalid malformed URI", "http://[::1", false},
+		{"invalid javascript scheme", "javascript:alert(1)", false},
+		{"invalid data scheme", "data:text/html,<script>alert(1)</script>", false},
+		{"empty", "", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, ValidateResourceURI(tt.input))
+		})
+	}
+}
+
+func TestValidateCallbackURL(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		{"valid https URL", "https://example.com/callback", true},
+		{"valid loopback URL", "http://127.0.0.1:49813/callback", true},
+		{"empty scheme", "//127.0.0.1:49813/callback", true},
+		{"valid custom scheme", "pocketid://callback", true},
+		{"invalid malformed URL", "http://[::1", false},
+		{"invalid missing scheme separator", "://example.com/callback", false},
+		{"rejects javascript scheme", "javascript:alert(1)", false},
+		{"rejects mixed case javascript scheme", "JavaScript:alert(1)", false},
+		{"rejects data scheme", "data:text/html;base64,PGgxPkhlbGxvPC9oMT4=", false},
+		{"rejects mixed case data scheme", "DaTa:text/html;base64,PGgxPkhlbGxvPC9oMT4=", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, ValidateCallbackURL(tt.input))
+		})
+	}
+}
+
+func TestValidateCallbackURLPattern(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		{"valid exact URL", "https://example.com/callback", true},
+		{"valid wildcard URL", "https://*.example.com/callback", true},
+		{"valid custom scheme", "pocketid://callback", true},
+		{"valid global wildcard", "*", true},
+		{"invalid relative URL", "/callback", false},
+		{"invalid malformed URL", "http://[::1", false},
+		{"rejects javascript scheme", "javascript:alert(1)", false},
+		{"rejects data scheme", "data:text/html;base64,PGgxPkhlbGxvPC9oMT4=", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, ValidateCallbackURLPattern(tt.input))
+		})
+	}
+}
+
+func TestBackchannelLogoutURLValidation(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		url      string
+		isPublic bool
+		wantErr  bool
+	}{
+		{name: "omitted for confidential client"},
+		{name: "omitted for public client", isPublic: true},
+		{name: "HTTPS for confidential client", url: "https://rp.example/logout"},
+		{name: "HTTPS for public client", url: "https://rp.example/logout", isPublic: true},
+		{name: "HTTP for confidential client", url: "http://rp.example:8080/logout?tenant=test"},
+		{name: "HTTP for public client", url: "http://rp.example/logout", isPublic: true, wantErr: true},
+		{name: "fragment", url: "https://rp.example/logout#fragment", wantErr: true},
+		{name: "empty fragment", url: "https://rp.example/logout#", wantErr: true},
+		{name: "encoded hash in query", url: "https://rp.example/logout?tenant=%23test", isPublic: true},
+		{name: "relative URL", url: "/logout", wantErr: true},
+		{name: "missing host", url: "https:///logout", wantErr: true},
+		{name: "unsupported scheme", url: "ftp://rp.example/logout", wantErr: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			input := OidcClientUpdateDto{Name: "Test Client", BackchannelLogoutURL: test.url, IsPublic: test.isPublic}
+			for _, dto := range []any{input, OidcClientCreateDto{OidcClientUpdateDto: input}} {
+				err := binding.Validator.ValidateStruct(dto)
+				if test.wantErr {
+					require.Error(t, err)
+				} else {
+					require.NoError(t, err)
+				}
+			}
+		})
+	}
+}

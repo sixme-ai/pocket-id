@@ -1,0 +1,85 @@
+<script lang="ts">
+	import SignInWrapper from '#lib/components/login-wrapper.svelte';
+	import SignupForm from '#lib/components/signup/signup-form.svelte';
+	import { Button } from '#lib/components/ui/button/index.ts';
+	import { m } from '#lib/paraglide/messages.js';
+	import UserService from '#lib/services/user-service.ts';
+	import appConfigStore from '#lib/stores/application-configuration-store.ts';
+	import userStore from '#lib/stores/user-store.ts';
+	import type { UserSignUp } from '#lib/types/user.type.ts';
+	import { getAxiosErrorMessage } from '#lib/utils/error-util.ts';
+	import { tryCatch } from '#lib/utils/try-catch-util.ts';
+	import { goto } from '$app/navigation';
+	import { LucideChevronLeft } from '@lucide/svelte';
+	import { onMount } from 'svelte';
+	import { fade } from 'svelte/transition';
+	import LoginLogoErrorSuccessIndicator from '../login/components/login-logo-error-success-indicator.svelte';
+
+	let { data } = $props();
+	const userService = new UserService();
+
+	let error: string | undefined = $state();
+
+	async function handleSignup(userData: UserSignUp) {
+		const result = await tryCatch(userService.signup({ ...userData, token: data.token }));
+
+		if (result.error) {
+			error = getAxiosErrorMessage(result.error);
+			return false;
+		}
+
+		await userStore.setUser(result.data);
+
+		goto('/');
+		return true;
+	}
+
+	onMount(() => {
+		if (!$appConfigStore.allowUserSignups || $appConfigStore.allowUserSignups === 'disabled') {
+			error = m.user_signups_are_disabled();
+			return;
+		}
+
+		// For token-based signups, check if we have a valid token
+		if ($appConfigStore.allowUserSignups === 'withToken' && !data.token) {
+			error = m.signup_requires_valid_token();
+		}
+	});
+</script>
+
+<svelte:head>
+	<title>{m.signup()}</title>
+</svelte:head>
+
+<SignInWrapper>
+	<div class="flex justify-center">
+		<LoginLogoErrorSuccessIndicator error={!!error} />
+	</div>
+
+	<h1 class="font-gloock mt-5 text-3xl font-bold sm:text-4xl">
+		{m.signup_to_appname({ appName: $appConfigStore.appName })}
+	</h1>
+
+	{#if !error}
+		<p class="text-muted-foreground mt-2" in:fade>
+			{m.create_your_account_to_get_started()}
+		</p>
+	{:else}
+		<p class="text-muted-foreground mt-2" in:fade>
+			{error}.
+		</p>
+	{/if}
+	{#if $appConfigStore.allowUserSignups === 'open' || data.token}
+		<SignupForm callback={handleSignup} />
+		<div class="mt-10 flex w-full items-center justify-between gap-2">
+			<a class="text-muted-foreground mt-5 flex text-sm" href="/login"
+				><LucideChevronLeft class="size-5" /> {m.back()}</a
+			>
+			<Button type="submit" form="sign-up-form" onclick={() => (error = undefined)}
+				>{m.signup()}</Button
+			>
+		</div>
+	{:else}
+		<Button class="mt-10" href="/login">{m.go_to_login()}</Button>
+	{/if}
+</SignInWrapper>

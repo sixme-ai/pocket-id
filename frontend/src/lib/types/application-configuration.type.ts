@@ -1,0 +1,75 @@
+import type { CustomClaim } from './custom-claim.type';
+
+export type AppConfig = {
+	appName: string;
+	homePageUrl: string;
+	allowOwnAccountEdit: boolean;
+	allowUserSignups: 'disabled' | 'withToken' | 'open';
+	emailOneTimeAccessAsUnauthenticatedEnabled: boolean;
+	emailOneTimeAccessAsAdminEnabled: boolean;
+	emailVerification: 'disabled' | 'optional' | 'required';
+	ldapEnabled: boolean;
+	disableAnimations: boolean;
+	uiConfigDisabled: boolean;
+	accentColor: string;
+	requireUserEmail: boolean;
+	tracingEnabled: boolean;
+	iconLibrary: 'default' | 'custom' | 'disabled';
+};
+
+export type AllAppConfig = AppConfig & {
+	// General
+	sessionDuration: number;
+	emailsVerified: boolean;
+	signupDefaultUserGroupIDs: string[];
+	signupDefaultCustomClaims: CustomClaim[];
+	// Email
+	smtpHost: string;
+	smtpPort: string;
+	smtpFrom: string;
+	smtpUser: string;
+	smtpPassword: string;
+	smtpTls: 'none' | 'starttls' | 'tls';
+	smtpSkipCertVerify: boolean;
+	emailLoginNotificationMode: 'disabled' | 'always' | 'ipAndUserAgent' | 'browserRecognition';
+	emailApiKeyExpirationEnabled: boolean;
+	// LDAP
+	ldapUrl: string;
+	ldapBindDn: string;
+	ldapBindPassword: string;
+	ldapBase: string;
+	ldapUserSearchFilter: string;
+	ldapUserGroupSearchFilter: string;
+	ldapSkipCertVerify: boolean;
+	ldapAttributeUserUniqueIdentifier: string;
+	ldapAttributeUserUsername: string;
+	ldapAttributeUserEmail: string;
+	ldapAttributeUserFirstName: string;
+	ldapAttributeUserLastName: string;
+	ldapAttributeUserDisplayName: string;
+	ldapAttributeUserProfilePicture: string;
+	ldapAttributeGroupMember: string;
+	ldapAttributeGroupUniqueIdentifier: string;
+	ldapAttributeGroupName: string;
+	ldapAdminGroupName: string;
+	ldapSoftDeleteUsers: boolean;
+	// WebAuthn
+	webauthnUserVerification: 'required' | 'preferred';
+	webauthnAllowSyncedPasskeys: boolean;
+	webauthnAuthenticatorAttachment: 'any' | 'platform' | 'cross-platform';
+	// OIDC
+	cimdUrlAllowlist: string[];
+	autoCreateOidcClientSecret: boolean;
+};
+
+export type AppConfigRawResponse = {
+	key: string;
+	type: string;
+	value: string;
+}[];
+
+export type AppVersionInformation = {
+	isUpToDate: boolean | null;
+	newestVersion: string | null;
+	currentVersion: string;
+};

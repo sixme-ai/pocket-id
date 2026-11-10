@@ -1,0 +1,241 @@
+package webauthn
+
+import (
+	"errors"
+	"fmt"
+	"net/http"
+	"os"
+	"strconv"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-webauthn/webauthn/protocol"
+
+	"github.com/pocket-id/pocket-id/backend/internal/appconfig"
+	"github.com/pocket-id/pocket-id/backend/internal/apperror"
+	"github.com/pocket-id/pocket-id/backend/internal/auditlogs"
+	"github.com/pocket-id/pocket-id/backend/internal/authz"
+	"github.com/pocket-id/pocket-id/backend/internal/dto"
+	"github.com/pocket-id/pocket-id/backend/internal/httpserver"
+	"github.com/pocket-id/pocket-id/backend/internal/utils"
+	"github.com/pocket-id/pocket-id/backend/internal/utils/cookie"
+)
+
+type handler struct {
+	service   *Service
+	appConfig appconfig.AppConfigResolver
+}
+
+func newHandler(service *Service, appConfig appconfig.AppConfigResolver) *handler {
+	return &handler{
+		service:   service,
+		appConfig: appConfig,
+	}
+}
+
+func (h *handler) beginRegistration(c *gin.Context) error {
+	dbConfig, err := h.appConfig.GetConfig(c.Request.Context())
+	if err != nil {
+		return fmt.Errorf("error loading app configuration: %w", err)
+	}
+
+	userID := authz.PrincipalFrom(c).UserID
+	options, err := h.service.BeginRegistration(c.Request.Context(), dbConfig, userID)
+	if err != nil {
+		return err
+	}
+
+	cookie.AddSessionIdCookie(c, int(options.Timeout.Seconds()), options.SessionID)
+	c.JSON(http.StatusOK, options.Response)
+	return nil
+}
+
+func (h *handler) verifyRegistration(c *gin.Context) error {
+	dbConfig, err := h.appConfig.GetConfig(c.Request.Context())
+	if err != nil {
+		return fmt.Errorf("error loading app configuration: %w", err)
+	}
+
+	sessionID, err := c.Cookie(cookie.SessionIdCookieName)
+	if err != nil {
+		return apperror.MissingSessionID()
+	}
+
+	userID := authz.PrincipalFrom(c).UserID
+	credential, err := h.service.VerifyRegistration(c.Request.Context(), dbConfig, sessionID, userID, c.Request, c.ClientIP())
+	if err != nil {
+		return err
+	}
+
+	var credentialDto dto.WebauthnCredentialDto
+	if err := dto.MapStruct(credential, &credentialDto); err != nil {
+		return err
+	}
+
+	c.JSON(http.StatusOK, credentialDto)
+	return nil
+}
+
+func (h *handler) beginLogin(c *gin.Context) error {
+	dbConfig, err := h.appConfig.GetConfig(c.Request.Context())
+	if err != nil {
+		return fmt.Errorf("error loading app configuration: %w", err)
+	}
+
+	options, err := h.service.BeginLogin(c.Request.Context(), dbConfig)
+	if err != nil {
+		return err
+	}
+
+	cookie.AddSessionIdCookie(c, int(options.Timeout.Seconds()), options.SessionID)
+	c.JSON(http.StatusOK, options.Response)
+	return nil
+}
+
+func (h *handler) verifyLogin(c *gin.Context) error {
+	dbConfig, err := h.appConfig.GetConfig(c.Request.Context())
+	if err != nil {
+		return fmt.Errorf("error loading app configuration: %w", err)
+	}
+
+	sessionID, err := c.Cookie(cookie.SessionIdCookieName)
+	if err != nil {
+		return apperror.MissingSessionID()
+	}
+
+	credentialAssertionData, err := protocol.ParseCredentialRequestResponseBody(c.Request.Body)
+	if err != nil {
+		return apperror.InvalidWebAuthnResponse(err)
+	}
+
+	browserToken, _ := c.Cookie(cookie.KnownBrowserCookieName)
+	user, tokens, err := h.service.VerifyLogin(c.Request.Context(), dbConfig, sessionID, credentialAssertionData, c.ClientIP(), c.Request.UserAgent(), browserToken)
+	if err != nil {
+		return err
+	}
+
+	var userDto dto.UserDto
+	if err := dto.MapStruct(user, &userDto); err != nil {
+		return err
+	}
+
+	maxAge := int(dbConfig.SessionDuration.AsDurationMinutes().Seconds())
+	cookie.AddAccessTokenCookie(c, maxAge, tokens.AccessToken)
+	if tokens.KnownBrowserToken != "" {
+		cookie.AddKnownBrowserCookie(c, tokens.KnownBrowserToken, int(auditlogs.KnownBrowserLifetime.Seconds()))
+	}
+
+	c.JSON(http.StatusOK, userDto)
+	return nil
+}
+
+func (h *handler) listCredentials(c *gin.Context) error {
+	userID := authz.PrincipalFrom(c).UserID
+	credentials, err := h.service.ListCredentials(c.Request.Context(), userID)
+	if err != nil {
+		return err
+	}
+
+	var credentialDtos []dto.WebauthnCredentialDto
+	if err := dto.MapStructList(credentials, &credentialDtos); err != nil {
+		return err
+	}
+
+	c.JSON(http.StatusOK, credentialDtos)
+	return nil
+}
+
+func (h *handler) deleteCredential(c *gin.Context) error {
+	userID := authz.PrincipalFrom(c).UserID
+	credentialID := c.Param("id")
+	clientIP := c.ClientIP()
+	userAgent := c.Request.UserAgent()
+
+	err := h.service.DeleteCredential(c.Request.Context(), userID, credentialID, clientIP, userAgent, userID)
+	if err != nil {
+		return err
+	}
+
+	c.Status(http.StatusNoContent)
+	return nil
+}
+
+func (h *handler) updateCredential(c *gin.Context) error {
+	userID := authz.PrincipalFrom(c).UserID
+	credentialID := c.Param("id")
+
+	var input dto.WebauthnCredentialUpdateDto
+	if err := httpserver.BindJSON(c, &input); err != nil {
+		return err
+	}
+
+	credential, err := h.service.UpdateCredential(c.Request.Context(), userID, credentialID, input.Name)
+	if err != nil {
+		return err
+	}
+
+	var credentialDto dto.WebauthnCredentialDto
+	if err := dto.MapStruct(credential, &credentialDto); err != nil {
+		return err
+	}
+
+	c.JSON(http.StatusOK, credentialDto)
+	return nil
+}
+
+func (h *handler) logout(c *gin.Context) error {
+	cookie.AddAccessTokenCookie(c, 0, "")
+	c.Status(http.StatusNoContent)
+	return nil
+}
+
+func (h *handler) reauthenticate(c *gin.Context) error {
+	sessionID, err := c.Cookie(cookie.SessionIdCookieName)
+	if err != nil {
+		return apperror.MissingSessionID()
+	}
+
+	var token string
+
+	// Try to create a reauthentication token with WebAuthn
+	credentialAssertionData, err := protocol.ParseCredentialRequestResponseBody(c.Request.Body)
+	if err == nil {
+		token, err = h.service.CreateReauthenticationTokenWithWebauthn(c.Request.Context(), sessionID, credentialAssertionData)
+		if err != nil {
+			return err
+		}
+	} else {
+		// If WebAuthn fails, try to create a reauthentication token with the access token
+		accessToken, _ := c.Cookie(cookie.AccessTokenCookieName)
+		token, err = h.service.CreateReauthenticationTokenWithAccessToken(c.Request.Context(), accessToken)
+		if err != nil {
+			return err
+		}
+	}
+
+	cookie.AddReauthenticationTokenCookie(c, token)
+	c.Status(http.StatusNoContent)
+	return nil
+}
+
+// getThemedAuthenticatorIcon serves the embedded icon of the authenticator behind an AAGUID
+// The route needs no authentication because the icons are static vendor branding that ships with the binary and reveals nothing about the instance or its users
+func (h *handler) getThemedAuthenticatorIcon(c *gin.Context) error {
+	// An unparsable light parameter falls back to the light icon, which every authenticator with an icon has
+	light, _ := strconv.ParseBool(c.DefaultQuery("light", "true"))
+
+	file, size, err := utils.OpenAuthenticatorIcon(c.Param("aaguid"), light)
+	if errors.Is(err, os.ErrNotExist) {
+		return apperror.ImageNotFound()
+	}
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Icons only change when a new version is deployed, so they can be cached aggressively
+	utils.SetCacheControlHeader(c, 24*time.Hour, 7*24*time.Hour)
+
+	c.DataFromReader(http.StatusOK, size, "image/svg+xml", file, nil)
+	return nil
+}

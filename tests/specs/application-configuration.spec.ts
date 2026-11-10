@@ -1,0 +1,424 @@
+import { expect, test } from '@playwright/test';
+import { cleanupBackend } from '../utils/cleanup.util';
+import { saveUnsavedChanges } from '../utils/unsaved-changes.util';
+
+test.beforeEach(async ({ page }) => {
+	await cleanupBackend();
+	await page.goto('/settings/admin/application-configuration');
+});
+
+test('Update general configuration', async ({ page }) => {
+	await page.getByLabel('Application Name', { exact: true }).fill('Updated Name');
+	await page.getByLabel('Session Duration').fill('30');
+
+	await page.getByRole('combobox', { name: 'Home Page' }).click();
+	await page.getByRole('option', { name: 'My Apps' }).click();
+
+	await saveUnsavedChanges(page);
+
+	await page.reload();
+
+	await expect(page.getByLabel('Application Name', { exact: true })).toHaveValue('Updated Name');
+	await expect(page.getByLabel('Session Duration')).toHaveValue('30');
+
+	await page.getByRole('link', { name: 'Logo' }).click();
+	await page.waitForURL('/settings/apps');
+});
+
+test('Disable automatic client secret creation', async ({ page }) => {
+	await page.getByRole('tab', { name: 'OIDC' }).click();
+	const autoCreateSecret = page.getByRole('switch', {
+		name: 'Automatically create client secrets'
+	});
+	await expect(autoCreateSecret).toBeChecked();
+	await autoCreateSecret.click();
+	await saveUnsavedChanges(page);
+
+	await page.reload();
+	await page.getByRole('tab', { name: 'OIDC' }).click();
+	await expect(autoCreateSecret).not.toBeChecked();
+
+	const response = await page.request.post('/api/oidc/clients', {
+		data: { name: 'No Automatic Secret' }
+	});
+	expect(response.status()).toBe(201);
+	const createdClient = await response.json();
+	expect(createdClient.createdSecret).toBeUndefined();
+	expect(createdClient.credentials.secrets ?? []).toHaveLength(0);
+});
+
+test('Save configuration from every editable tab together', async ({ page }) => {
+	await page.getByLabel('Application Name', { exact: true }).fill('Combined Settings');
+	await page.getByRole('tab', { name: 'User Creation' }).click();
+	await page.getByRole('combobox', { name: 'Enable User Signups' }).click();
+	await page.getByRole('option', { name: 'Open Signup' }).click();
+	await page.getByRole('tab', { name: 'Passkeys' }).click();
+	await page.getByRole('combobox', { name: 'User verification' }).click();
+	await page.getByRole('option', { name: 'Preferred' }).click();
+	await page.getByRole('tab', { name: 'Email' }).click();
+	await page.getByLabel('SMTP Host').fill('smtp.combined.test');
+	await page.getByLabel('SMTP Port').fill('587');
+	await page.getByLabel('SMTP From').fill('combined@example.com');
+	await page.getByRole('tab', { name: 'OIDC' }).click();
+	await page.getByRole('textbox').fill('https://combined.example.com/*');
+
+	await saveUnsavedChanges(page);
+
+	await page.getByRole('tab', { name: 'General' }).click();
+	await expect(page.getByLabel('Application Name', { exact: true })).toHaveValue(
+		'Combined Settings'
+	);
+	await page.getByRole('tab', { name: 'Email' }).click();
+	await expect(page.getByLabel('SMTP Host')).toHaveValue('smtp.combined.test');
+	await page.getByRole('tab', { name: 'Passkeys' }).click();
+	await expect(page.getByRole('combobox', { name: 'User verification' })).toContainText(
+		'Preferred'
+	);
+	await page.getByRole('tab', { name: 'OIDC' }).click();
+	await expect(page.getByRole('textbox')).toHaveValue('https://combined.example.com/*');
+
+	await page.reload();
+	await page.getByRole('tab', { name: 'General' }).click();
+	await expect(page.getByLabel('Application Name', { exact: true })).toHaveValue(
+		'Combined Settings'
+	);
+	await page.getByRole('tab', { name: 'User Creation' }).click();
+	await page.getByRole('combobox', { name: 'Enable User Signups' }).click();
+	await expect(page.getByRole('option', { name: 'Open Signup' })).toHaveAttribute(
+		'aria-selected',
+		'true'
+	);
+	await page.keyboard.press('Escape');
+	await page.getByRole('tab', { name: 'Email' }).click();
+	await expect(page.getByLabel('SMTP Host')).toHaveValue('smtp.combined.test');
+	await page.getByRole('tab', { name: 'Passkeys' }).click();
+	await expect(page.getByRole('combobox', { name: 'User verification' })).toContainText(
+		'Preferred'
+	);
+	await page.getByRole('tab', { name: 'OIDC' }).click();
+	await expect(page.getByRole('textbox')).toHaveValue('https://combined.example.com/*');
+});
+
+test('Invalid hidden configuration prevents every section from being saved', async ({ page }) => {
+	let updateRequests = 0;
+	page.on('request', (request) => {
+		if (
+			request.method() === 'PUT' &&
+			new URL(request.url()).pathname === '/api/application-configuration'
+		) {
+			updateRequests++;
+		}
+	});
+
+	await page.getByLabel('Application Name', { exact: true }).fill('Validated Together');
+	await page.getByRole('tab', { name: 'Email' }).click();
+	await page.getByLabel('SMTP Host').fill('smtp.validation.test');
+	await page.getByLabel('SMTP From').fill('validation@example.com');
+	await page.getByRole('tab', { name: 'General' }).click();
+
+	await page.getByRole('button', { name: 'Save', exact: true }).click();
+
+	const emailTab = page.getByRole('tab', { name: 'Email' });
+	const smtpPort = page.getByLabel('SMTP Port');
+	await expect(page.getByText('Please fix the highlighted errors before saving')).toBeVisible();
+	await expect(emailTab).toHaveAttribute('aria-selected', 'true');
+	await expect(smtpPort).toHaveAttribute('aria-invalid', 'true');
+	await expect(smtpPort).toBeFocused();
+	expect(updateRequests).toBe(0);
+
+	await smtpPort.fill('587');
+	await saveUnsavedChanges(page);
+
+	await page.reload();
+	await page.getByRole('tab', { name: 'General' }).click();
+	await expect(page.getByLabel('Application Name', { exact: true })).toHaveValue(
+		'Validated Together'
+	);
+	await page.getByRole('tab', { name: 'Email' }).click();
+	await expect(page.getByLabel('SMTP Host')).toHaveValue('smtp.validation.test');
+	await expect(page.getByLabel('SMTP Port')).toHaveValue('587');
+	await expect(page.getByLabel('SMTP From')).toHaveValue('validation@example.com');
+});
+
+test.describe('Update user creation configuration', () => {
+	test.beforeEach(async ({ page }) => {
+		await page.getByRole('tab', { name: 'User Creation' }).click();
+	});
+
+	test('should save sign up mode', async ({ page }) => {
+		await page.getByRole('combobox', { name: 'Enable User Signups' }).click();
+		await page.getByRole('option', { name: 'Open Signup' }).click();
+
+		await saveUnsavedChanges(page);
+
+		await page.reload();
+
+		await expect(page.getByRole('combobox', { name: 'Enable User Signups' })).toBeVisible();
+	});
+
+	test('should save default user groups for new signups', async ({ page }) => {
+		const developersOption = page.getByRole('option', { name: 'Developers' });
+		const designersOption = page.getByRole('option', { name: 'Designers' });
+
+		await page.getByRole('combobox', { name: 'User Groups' }).click();
+		await developersOption.click();
+		await expect(developersOption).toBeChecked();
+		await designersOption.click();
+		await expect(designersOption).toBeChecked();
+		await page.keyboard.press('Escape');
+
+		await saveUnsavedChanges(page);
+
+		await page.reload();
+
+		await page.getByRole('combobox', { name: 'User Groups' }).click();
+
+		await expect(page.getByRole('option', { name: 'Developers' })).toBeChecked();
+		await expect(page.getByRole('option', { name: 'Designers' })).toBeChecked();
+	});
+
+	test('should save default custom claims for new signups', async ({ page }) => {
+		await page.getByRole('button', { name: 'Add custom claim' }).click();
+		await page.getByPlaceholder('Key').fill('test-claim');
+		await page.getByPlaceholder('Value').fill('test-value');
+		await page.getByRole('button', { name: 'Add another' }).click();
+		await page.getByPlaceholder('Key').nth(1).fill('another-claim');
+		await page.getByPlaceholder('Value').nth(1).fill('another-value');
+
+		await saveUnsavedChanges(page);
+
+		await page.reload();
+
+		await expect(page.getByPlaceholder('Key').first()).toHaveValue('test-claim');
+		await expect(page.getByPlaceholder('Value').first()).toHaveValue('test-value');
+		await expect(page.getByPlaceholder('Key').nth(1)).toHaveValue('another-claim');
+		await expect(page.getByPlaceholder('Value').nth(1)).toHaveValue('another-value');
+	});
+});
+
+test('Update passkey configuration', async ({ page }) => {
+	await page.getByRole('tab', { name: 'Passkeys' }).click();
+
+	const userVerification = page.getByLabel('User verification');
+	const authenticatorType = page.getByLabel('Allowed authenticator type');
+	const allowSyncedPasskeys = page.getByRole('switch', { name: 'Allow synced passkeys' });
+
+	await expect(userVerification).toContainText('Required');
+	await userVerification.click();
+	await page.getByRole('option', { name: 'Preferred' }).click();
+
+	await expect(authenticatorType).toContainText('Any passkey');
+	await authenticatorType.click();
+	await page.getByRole('option', { name: 'External security keys only' }).click();
+
+	await expect(allowSyncedPasskeys).toBeChecked();
+	await allowSyncedPasskeys.click();
+
+	await saveUnsavedChanges(page);
+
+	const registrationResponse = await page.request.get('/api/webauthn/register/start');
+	expect(registrationResponse.ok()).toBeTruthy();
+	await expect(registrationResponse.json()).resolves.toMatchObject({
+		authenticatorSelection: {
+			authenticatorAttachment: 'cross-platform',
+			userVerification: 'preferred'
+		}
+	});
+
+	const loginResponse = await page.request.get('/api/webauthn/login/start');
+	expect(loginResponse.ok()).toBeTruthy();
+	await expect(loginResponse.json()).resolves.toMatchObject({
+		userVerification: 'preferred'
+	});
+
+	await page.reload();
+	await page.getByRole('tab', { name: 'Passkeys' }).click();
+
+	await expect(page.getByLabel('User verification')).toContainText('Preferred');
+	await expect(page.getByLabel('Allowed authenticator type')).toContainText(
+		'External security keys only'
+	);
+	await expect(page.getByRole('switch', { name: 'Allow synced passkeys' })).not.toBeChecked();
+});
+
+test('Update email configuration', async ({ page }) => {
+	await page.getByRole('tab', { name: 'Email' }).click();
+
+	await page.getByLabel('SMTP Host').fill('smtp.gmail.com');
+	await page.getByLabel('SMTP Port').fill('587');
+	await page.getByLabel('SMTP User').fill('test@gmail.com');
+	await page.getByLabel('SMTP Password').fill('password');
+	await page.getByLabel('SMTP From').fill('test@gmail.com');
+	await page.getByLabel('Email Login Notification').click();
+	await page.getByRole('option', { name: /^Unrecognized browser/ }).click();
+	await page.getByLabel('Email Login Code Requested by User').click();
+	await page.getByLabel('Email Login Code from Admin').click();
+	await page.getByLabel('API Key Expiration').click();
+	await page.getByLabel('Email Verification', { exact: true }).click();
+	await page.getByRole('option', { name: /^Required/ }).click();
+
+	await saveUnsavedChanges(page);
+
+	await page.reload();
+
+	await expect(page.getByLabel('SMTP Host')).toHaveValue('smtp.gmail.com');
+	await expect(page.getByLabel('SMTP Port')).toHaveValue('587');
+	await expect(page.getByLabel('SMTP User')).toHaveValue('test@gmail.com');
+	await expect(page.getByLabel('SMTP Password')).toHaveValue('password');
+	await expect(page.getByLabel('SMTP From')).toHaveValue('test@gmail.com');
+	await expect(page.getByLabel('Email Login Notification')).toContainText('Unrecognized browser');
+	await expect(page.getByLabel('Email Login Code Requested by User')).toBeChecked();
+	await expect(page.getByLabel('Email Login Code from Admin')).toBeChecked();
+	await expect(page.getByLabel('API Key Expiration')).toBeChecked();
+	await expect(page.getByLabel('Email Verification', { exact: true })).toContainText('Required');
+});
+
+test('Required email verification turns off emails verified by default', async ({ page }) => {
+	await page.getByRole('tab', { name: 'Email' }).click();
+
+	const emailsVerifiedByDefault = page.getByLabel('Emails verified by default');
+	await emailsVerifiedByDefault.click();
+	await expect(emailsVerifiedByDefault).toBeChecked();
+
+	await page.getByLabel('Email Verification', { exact: true }).click();
+	await page.getByRole('option', { name: /^Required/ }).click();
+
+	await expect(emailsVerifiedByDefault).not.toBeChecked();
+	await expect(emailsVerifiedByDefault).toBeDisabled();
+
+	await page.getByLabel('Email Verification', { exact: true }).click();
+	await page.getByRole('option', { name: /^Optional/ }).click();
+
+	await expect(emailsVerifiedByDefault).toBeEnabled();
+});
+
+test('Save LDAP configuration while LDAP remains disabled', async ({ page }) => {
+	await page.getByRole('tab', { name: 'LDAP' }).click();
+
+	const disableButton = page.getByRole('button', { name: 'Disable', exact: true });
+	if (await disableButton.isVisible()) {
+		await disableButton.click();
+		await expect(page.getByRole('button', { name: 'Enable', exact: true })).toBeVisible();
+	}
+
+	const softDeleteUsers = page.getByRole('switch', { name: 'Keep disabled users from LDAP' });
+	const originalValue = await softDeleteUsers.isChecked();
+	await softDeleteUsers.click();
+	await expect(page.getByText('You have unsaved changes', { exact: true })).toBeVisible();
+
+	await page.getByRole('button', { name: 'Discard', exact: true }).click();
+	await expect(softDeleteUsers).toBeChecked({ checked: originalValue });
+
+	await softDeleteUsers.click();
+	await saveUnsavedChanges(page);
+
+	await page.reload();
+	await page.getByRole('tab', { name: 'LDAP' }).click();
+	await expect(page.getByRole('button', { name: 'Enable', exact: true })).toBeVisible();
+	await expect(page.getByRole('switch', { name: 'Keep disabled users from LDAP' })).toBeChecked({
+		checked: !originalValue
+	});
+});
+
+test.describe('Update application images', () => {
+	test('should detect image resets as unsaved changes', async ({ page }) => {
+		await page
+			.getByLabel('Background Image', { exact: true })
+			.setInputFiles('resources/images/clouds.jpg');
+		await saveUnsavedChanges(page);
+
+		await page
+			.getByRole('button', { name: 'Reset to default Background Image', exact: true })
+			.click();
+		await expect(page.getByText('You have unsaved changes', { exact: true })).toBeVisible();
+
+		await page.getByRole('button', { name: 'Discard', exact: true }).click();
+		await expect(
+			page.getByRole('button', { name: 'Reset to default Background Image', exact: true })
+		).toBeVisible();
+	});
+
+	test('should upload images and reset custom logos', async ({ page }) => {
+		await page
+			.getByLabel('Favicon', { exact: true })
+			.setInputFiles('resources/images/w3-schools-favicon.ico');
+		await page
+			.getByLabel('Light Mode Logo', { exact: true })
+			.setInputFiles('resources/images/pingvin-share-logo.png');
+		await page
+			.getByLabel('Dark Mode Logo', { exact: true })
+			.setInputFiles('resources/images/cloud-logo.png');
+		await page
+			.getByLabel('Email Logo', { exact: true })
+			.setInputFiles('resources/images/pingvin-share-logo.png');
+		await page
+			.getByLabel('Default Profile Picture', { exact: true })
+			.setInputFiles('resources/images/pingvin-share-logo.png');
+		await page
+			.getByLabel('Background Image', { exact: true })
+			.setInputFiles('resources/images/clouds.jpg');
+		await saveUnsavedChanges(page);
+
+		await page.request
+			.get('/api/application-images/favicon')
+			.then((res) => expect.soft(res.status()).toBe(200));
+		await page.request
+			.get('/api/application-images/logo?light=true')
+			.then((res) => expect.soft(res.status()).toBe(200));
+		await page.request
+			.get('/api/application-images/logo?light=false')
+			.then((res) => expect.soft(res.status()).toBe(200));
+		await page.request
+			.get('/api/application-images/email')
+			.then((res) => expect.soft(res.status()).toBe(200));
+		await page.request
+			.get('/api/application-images/background')
+			.then((res) => expect.soft(res.status()).toBe(200));
+
+		await page
+			.getByRole('button', { name: 'Reset to default Light Mode Logo', exact: true })
+			.click();
+		await page
+			.getByRole('button', { name: 'Reset to default Dark Mode Logo', exact: true })
+			.click();
+		const logoDeleteResponses = [true, false].map((light) =>
+			page.waitForResponse((response) => {
+				const url = new URL(response.url());
+				return (
+					response.request().method() === 'DELETE' &&
+					url.pathname === '/api/application-images/logo' &&
+					url.searchParams.get('light') === String(light)
+				);
+			})
+		);
+		await saveUnsavedChanges(page);
+		for (const response of await Promise.all(logoDeleteResponses)) {
+			expect(response.status()).toBe(204);
+		}
+
+		// Without a custom logo the endpoint falls back to the logo bundled with Pocket ID
+		await page.request
+			.get('/api/application-images/logo?light=true')
+			.then((res) => expect.soft(res.status()).toBe(200));
+		await page.request
+			.get('/api/application-images/logo?light=false')
+			.then((res) => expect.soft(res.status()).toBe(200));
+
+		// The bundled logo can be skipped to check whether a custom logo is set
+		await page.request
+			.get('/api/application-images/logo?light=true&default=false')
+			.then((res) => expect.soft(res.status()).toBe(404));
+		await page.request
+			.get('/api/application-images/logo?light=false&default=false')
+			.then((res) => expect.soft(res.status()).toBe(404));
+	});
+
+	test('should only allow png/jpeg for email logo', async ({ page }) => {
+		const emailLogoInput = page.getByLabel('Email Logo', { exact: true });
+
+		await emailLogoInput.setInputFiles('resources/images/cloud-logo.svg');
+		await page.getByRole('button', { name: 'Save', exact: true }).click();
+
+		await expect(page.getByText('File must be of type PNG or JPEG', { exact: true })).toBeVisible();
+	});
+});
