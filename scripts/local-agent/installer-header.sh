@@ -67,3 +67,4 @@ chmod 700 "$staging/local-agent"
 mv -T -- "$staging/local-agent" "$install_dir" || fail 'Cannot install without overwriting destination'
 printf 'Pocket ID installed in %s\n' "$install_dir"
 "$install_dir/start.sh"
+exit 0
