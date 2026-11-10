@@ -1,7 +1,7 @@
 Pocket ID Local Agent Test Bundle (Linux x86_64 only)
 
 1. Extract the ZIP and run ./start.sh. No Go, Node, pnpm, Docker or Maven needed.
-2. Python 3 is required for the automatic bootstrap (present on the agent Linux environment).
+2. The bootstrap interpreter and all build dependencies are bundled by GitHub Actions.
 3. The first start creates a real local human test admin (username agent-tester),
    a public OAuth PKCE client, an M2M OAuth client and mcp:access resource grants.
 4. ./start.sh prints a real single-use login link for the human test admin,
