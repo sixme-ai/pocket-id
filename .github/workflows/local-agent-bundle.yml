@@ -1,4 +1,4 @@
-name: Pocket ID Local Agent Bundle
+name: Pocket ID Linux Local Agent Installer (.run)
 
 on:
   push:
@@ -31,7 +31,7 @@ concurrency:
 
 jobs:
   linux-amd64:
-    name: Build, real smoke test and package
+    name: Build, real smoke test and publish .run
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
@@ -96,32 +96,55 @@ jobs:
           test ! -e dist/local-agent/shared-admin-key.txt
           test ! -e dist/local-agent/.env
 
-      - name: Test first boot and idempotent re-run against real Pocket ID
+      - name: Create self-extracting Linux .run installer
         shell: bash
         run: |
           set -euo pipefail
-          cd dist/local-agent
-          trap './stop.sh >/dev/null 2>&1 || true' EXIT
-          timeout 150s ./start.sh > first-start.log 2>&1 || {
-            echo "First startup failed"
-            sed -E 's@/lc/[A-Za-z0-9_-]+@/lc/REDACTED@g' first-start.log | tail -60
-            tail -60 logs/pocket-id.log 2>/dev/null || true
+          bash -n scripts/local-agent/installer-header.sh
+          test ! -e dist/local-agent/.env
+          test ! -e dist/local-agent/shared-admin-key.txt
+          tar --create --gzip --file "$RUNNER_TEMP/pocket-id-local-agent.tar.gz" --directory dist local-agent
+          archive_sha="$(sha256sum "$RUNNER_TEMP/pocket-id-local-agent.tar.gz" | cut -d ' ' -f 1)"
+          sed "s/__ARCHIVE_SHA256__/$archive_sha/" scripts/local-agent/installer-header.sh \
+            > dist/pocket-id-local-agent-linux-amd64.run
+          printf '\n__POCKET_ID_ARCHIVE_BELOW__\n' >> dist/pocket-id-local-agent-linux-amd64.run
+          cat "$RUNNER_TEMP/pocket-id-local-agent.tar.gz" >> dist/pocket-id-local-agent-linux-amd64.run
+          chmod 700 dist/pocket-id-local-agent-linux-amd64.run
+          test -x dist/pocket-id-local-agent-linux-amd64.run
+          dist/pocket-id-local-agent-linux-amd64.run --help
+
+      - name: Install real .run and verify OIDC, OAuth, negative and idempotence
+        shell: bash
+        run: |
+          set -euo pipefail
+          installer="$PWD/dist/pocket-id-local-agent-linux-amd64.run"
+          location="$RUNNER_TEMP/pocket-id-run-real"
+          trap 'if [[ -x "$location/stop.sh" ]]; then "$location/stop.sh" >/dev/null 2>&1 || true; fi' EXIT
+          POCKET_ID_INSTALL_DIR="$location" timeout 180s "$installer" > "$RUNNER_TEMP/first-start.log" 2>&1 || {
+            echo "First .run startup failed"
+            sed -E 's@/lc/[A-Za-z0-9_-]+@/lc/REDACTED@g' "$RUNNER_TEMP/first-start.log" | tail -60
+            tail -60 "$location/logs/pocket-id.log" 2>/dev/null || true
             exit 1
           }
-          grep -Fq 'OIDC/JWKS, local human setup, M2M OAuth and wrong-secret denial: PASS' first-start.log
-          test ! -e shared-admin-key.txt
-          test "$(stat -c '%a' .env)" = 600
-          grep -Eq '^STATIC_API_KEY=[0-9a-f]{64}$' .env
-          test -s .login-link.txt
-          test -s .local-oauth.json
-          timeout 60s ./start.sh > second-start.log 2>&1
-          grep -Fq 'Initial human administrator already exists' second-start.log
-          python3 - <<'PY'
+          grep -Fq 'OIDC/JWKS, local human setup, M2M OAuth and wrong-secret denial: PASS' "$RUNNER_TEMP/first-start.log"
+          test -x "$location/pocket-id"
+          test -x "$location/bootstrap"
+          test -s "$location/.installer-archive.sha256"
+          test ! -e "$location/shared-admin-key.txt"
+          test "$(stat -c '%a' "$location/.env")" = 600
+          grep -Eq '^STATIC_API_KEY=[0-9a-f]{64}$' "$location/.env"
+          test -s "$location/.login-link.txt"
+          test -s "$location/.local-oauth.json"
+          POCKET_ID_INSTALL_DIR="$location" timeout 60s "$installer" > "$RUNNER_TEMP/second-start.log" 2>&1
+          grep -Fq 'Initial human administrator already exists' "$RUNNER_TEMP/second-start.log"
+          INSTALL_DIR="$location" python3 - <<'PY'
           import json
+          import os
           import urllib.error
           import urllib.request
           from pathlib import Path
-          auth = json.loads(Path(".local-oauth.json").read_text())
+          installed = Path(os.environ["INSTALL_DIR"])
+          auth = json.loads((installed / ".local-oauth.json").read_text())
           assert auth["human_client_id"] and auth["m2m_client_id"]
           assert auth["m2m_client_secret"] and auth["human_granted"]
           opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
@@ -134,23 +157,28 @@ jobs:
               assert err.code == 404, f"Unexpected setup status {err.code}"
           else:
               raise AssertionError("Initial admin setup remained available")
-          print("REAL RUNTIME PASS: embedded UI, first admin, idempotence, OAuth and negative")
+          print("REAL .run PASS: embedded UI, initial admin, idempotence, OAuth, wrong-secret denial")
           PY
+          printf keep > "$RUNNER_TEMP/owner-data"
+          mkdir "$RUNNER_TEMP/already-exists"
+          cp "$RUNNER_TEMP/owner-data" "$RUNNER_TEMP/already-exists/owner-data"
+          if POCKET_ID_INSTALL_DIR="$RUNNER_TEMP/already-exists" timeout 20s "$installer" >/dev/null 2>&1; then
+            echo 'Existing user data was overwritten: FAIL'
+            exit 1
+          fi
+          test "$(cat "$RUNNER_TEMP/already-exists/owner-data")" = keep
+          cp "$installer" "$RUNNER_TEMP/tampered.run"
+          printf corrupted >> "$RUNNER_TEMP/tampered.run"
+          if POCKET_ID_INSTALL_DIR="$RUNNER_TEMP/tampered-install" timeout 20s "$RUNNER_TEMP/tampered.run" >/dev/null 2>&1; then
+            echo 'Corrupted .run checksum not rejected: FAIL'
+            exit 1
+          fi
+          test ! -e "$RUNNER_TEMP/tampered-install"
 
-      - name: Create downloadable release-like ZIP
-        run: |
-          set -euo pipefail
-          rm -rf dist/local-agent/__pycache__ dist/local-agent/logs dist/local-agent/data
-          rm -f dist/local-agent/.env dist/local-agent/.pocket-id.pid
-          rm -f dist/local-agent/.local-oauth.json dist/local-agent/.login-link.txt
-          rm -f dist/local-agent/first-start.log dist/local-agent/second-start.log
-          (cd dist && zip -q -r pocket-id-local-agent-linux-amd64.zip local-agent)
-          sha256sum dist/pocket-id-local-agent-linux-amd64.zip | tee -a "$GITHUB_STEP_SUMMARY"
-
-      - name: Publish binary plus automatic setup as GitHub Actions artifact
+      - name: Publish Linux .run as GitHub Actions artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: pocket-id-local-agent-linux-amd64
-          path: dist/pocket-id-local-agent-linux-amd64.zip
+          name: pocket-id-local-agent-linux-amd64-run
+          path: dist/pocket-id-local-agent-linux-amd64.run
           if-no-files-found: error
           retention-days: 14

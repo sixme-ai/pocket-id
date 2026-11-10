@@ -1,23 +1,29 @@
-Pocket ID Local Agent Test Bundle (Linux x86_64 only)
+Pocket ID Local Agent Test Installer (.run, Linux x86_64 only)
 
-1. Extract the ZIP and run ./start.sh. No Go, Node, pnpm, Docker or Maven needed.
-2. The bootstrap interpreter and all build dependencies are bundled by GitHub Actions.
-3. The first start creates a real local human test admin (username agent-tester),
-   a public OAuth PKCE client, an M2M OAuth client and mcp:access resource grants.
-4. ./start.sh prints a real single-use login link for the human test admin,
-   fresh on each start. The same link is also in .login-link.txt (mode 0600).
-5. Pocket ID is PASSKEY-ONLY: a local admin API key is generated on first start
-   in private .env (mode 0600). It is NOT a human password; use the one-time code.
-6. Every installation generates its own key. No API key is bundled in the ZIP.
+1. Obtain pocket-id-local-agent-linux-amd64.run from the CI artifact.
+   GitHub Actions may wrap the .run in a download ZIP; extract the .run once.
+2. Run: chmod +x pocket-id-local-agent-linux-amd64.run
+        ./pocket-id-local-agent-linux-amd64.run
+   The .run installs to ~/.local/share/pocket-id-local-agent and starts Pocket ID.
+   For a different private directory, set POCKET_ID_INSTALL_DIR=/absolute/path.
+3. The installer embeds Pocket ID, its frontend, and the frozen OAuth bootstrap.
+   No Go, Node, pnpm, Python, Docker or Maven installation is required.
+4. On first start, a local human test admin (agent-tester), public PKCE client,
+   M2M client, API resource and mcp:access grants are created by the real API.
+5. A unique local static admin API key is generated in private .env (0600).
+   This key is not a human password. Pocket ID human login is passkey-only.
+6. The one-time human login URL is printed and stored in .login-link.txt (0600).
+   Human PKCE and M2M details are stored in .local-oauth.json (0600).
+7. The server listens only on 127.0.0.1:1411 using local private SQLite.
    NEVER expose this local test instance to the internet.
-7. For M2M OAuth client ID, secret and resource, inspect .local-oauth.json
-   (mode 0600). The human PKCE client ID is there as well.
-8. The service listens only on 127.0.0.1:1411 and uses private local SQLite.
-9. Run ./stop.sh when done. Re-running ./start.sh is idempotent.
+8. Re-running the same .run reuses the existing installation and its state.
+   A different .run build refuses to overwrite the existing installation.
+9. Stop with ~/.local/share/pocket-id-local-agent/stop.sh (or the custom path).
+   Uninstall manually only after stopping and preserving any needed local data.
 
 Default MCP resource: http://localhost:8080/mcp
 Default human OAuth callback: http://localhost:3000/callback
-Override only with loopback URLs using LOCAL_MCP_RESOURCE and LOCAL_OAUTH_CALLBACK.
+Override only with loopback URLs via LOCAL_MCP_RESOURCE and LOCAL_OAUTH_CALLBACK.
 
-This bundle provides a real local OIDC test server, NOT ChatGPT/Claude remote
-OAuth E2E, nor automatic permission to invoke the real GitHub MCP.
+This package is a real local OIDC test service, not remote ChatGPT/Claude
+OAuth E2E and not permission to invoke a real GitHub MCP.
