@@ -4,13 +4,13 @@ umask 077
 cd "$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 fail() { printf 'Pocket ID local ERROR: %s\n' "$*" >&2; exit 1; }
 [[ "$(uname -s)" == Linux && "$(uname -m)" == x86_64 ]] || fail 'This package needs Linux x86_64'
-command -v python3 >/dev/null || fail 'python3 is required for local OAuth bootstrap'
+[[ -x bootstrap ]] || fail 'Bundled bootstrap executable missing'
 [[ -x pocket-id ]] || fail 'pocket-id executable missing'
 [[ -f shared-admin-key.txt && ! -L shared-admin-key.txt ]] || fail 'shared test API key missing'
 mkdir -p data logs
 chmod 700 data logs
 if [[ ! -f .env ]]; then
-  key="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+  key="$(od -An -N32 -tx1 /dev/urandom | tr -d ' \n')"
   api_key="$(tr -d '\r\n' < shared-admin-key.txt)"
   [[ "$api_key" =~ ^[0-9a-f]{64}$ ]] || fail 'Invalid shared test API key'
   ( set -C; cat > .env <<EOF
@@ -37,14 +37,14 @@ if [[ -f .pocket-id.pid && ! -L .pocket-id.pid ]]; then
   fi
 fi
 if (( !alive )); then
-  if python3 -c 'import socket; s=socket.socket(); s.settimeout(1); x=s.connect_ex(("127.0.0.1",1411)); s.close(); exit(0 if x==0 else 1)'; then
+  if (echo > /dev/tcp/127.0.0.1/1411) >/dev/null 2>&1; then
     fail 'Port 127.0.0.1:1411 already occupied by another process'
   fi
   nohup ./pocket-id > logs/pocket-id.log 2>&1 < /dev/null &
   pid=$!
   printf '%s\n' "$pid" > .pocket-id.pid
 fi
-python3 ./bootstrap.py || { echo 'Read logs/pocket-id.log for startup errors' >&2; exit 1; }
+./bootstrap || { echo 'Read logs/pocket-id.log for startup errors' >&2; exit 1; }
 ./pocket-id one-time-access-token agent-tester | tee .login-link.txt
 chmod 600 .login-link.txt
 printf '\nPocket ID ready on http://localhost:1411 (PID %s)\n' "$pid"
