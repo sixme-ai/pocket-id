@@ -136,9 +136,11 @@ func New(ctx context.Context, deps Dependencies) (*Module, error) {
 		tokenHandler:         newTokenHandler(provider, claimsService, deps.APIAccess),
 		userInfoHandler:      newUserInfoHandler(provider, claimsService, deps.Config.BaseURL),
 		parHandler:           newPARHandler(provider),
-		introspectionHandler: newIntrospectionHandler(provider, authenticator, deps.Config.BaseURL),
-		endSessionHandler:    newEndSessionHandler(endSessionService, deps.Config.BaseURL),
-		deviceHandler:        newDeviceHandler(provider, deviceService),
+		introspectionHandler: newIntrospectionHandler(provider, authenticator, introspectionValidation{
+			store: store, claims: claimsService, apiAccess: deps.APIAccess,
+		}, deps.Config.BaseURL),
+		endSessionHandler: newEndSessionHandler(endSessionService, deps.Config.BaseURL),
+		deviceHandler:     newDeviceHandler(provider, deviceService),
 	}, nil
 }
 

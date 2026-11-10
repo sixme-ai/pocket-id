@@ -51,7 +51,7 @@ func newProvider(store *Store, authenticator *federatedClientAuthenticator, sign
 		RedirectURIMatcher:                      matchRedirectURI,
 		RedirectSecureChecker:                   redirectSecureChecker(config.AllowInsecureCallbackURLs),
 		EnforcePKCEForPublicClients:             true,
-		EnablePKCEPlainChallengeMethod:          true,
+		EnablePKCEPlainChallengeMethod:          false,
 		SupportedRequestObjectSigningAlgorithms: []string{"none"},
 		FormPostHTMLTemplate:                    formPostTemplate,
 		RefreshTokenScopes:                      []string{},

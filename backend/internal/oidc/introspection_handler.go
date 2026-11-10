@@ -13,13 +13,15 @@ import (
 type introspectionHandler struct {
 	provider      fosite.OAuth2Provider
 	authenticator *federatedClientAuthenticator
+	validation    introspectionValidation
 	baseURL       string
 }
 
-func newIntrospectionHandler(provider fosite.OAuth2Provider, authenticator *federatedClientAuthenticator, baseURL string) *introspectionHandler {
+func newIntrospectionHandler(provider fosite.OAuth2Provider, authenticator *federatedClientAuthenticator, validation introspectionValidation, baseURL string) *introspectionHandler {
 	return &introspectionHandler{
 		provider:      provider,
 		authenticator: authenticator,
+		validation:    validation,
 		baseURL:       baseURL,
 	}
 }
@@ -49,7 +51,8 @@ func (h *introspectionHandler) introspectToken(c *gin.Context) {
 	// A client may only introspect its own tokens. If it was issued to another client, report it as
 	// inactive instead of leaking its existence or contents.
 	callerClientID, err := h.callerClientID(ctx, c)
-	if err != nil || callerClientID == "" || response.GetAccessRequester().GetClient().GetID() != callerClientID {
+	if err != nil || callerClientID == "" || response.GetAccessRequester().GetClient().GetID() != callerClientID ||
+		!h.validation.active(ctx, response.GetAccessRequester(), h.baseURL) {
 		h.provider.WriteIntrospectionResponse(ctx, c.Writer, &fosite.IntrospectionResponse{Active: false})
 		return
 	}
@@ -88,7 +91,8 @@ func (h *introspectionHandler) tryFederatedClientAssertionIntrospection(c *gin.C
 		response.AccessTokenType = fosite.BearerAccessToken
 	}
 
-	if accessRequester.GetClient().GetID() != client.GetID() {
+	if accessRequester.GetClient().GetID() != client.GetID() ||
+		!h.validation.active(ctx, accessRequester, h.baseURL) {
 		h.provider.WriteIntrospectionResponse(ctx, c.Writer, &fosite.IntrospectionResponse{Active: false})
 		return true
 	}
@@ -103,6 +107,9 @@ func (h *introspectionHandler) callerClientID(ctx context.Context, c *gin.Contex
 		_, accessRequester, err := h.provider.IntrospectToken(ctx, bearer, fosite.AccessToken, NewEmptySession())
 		if err != nil {
 			return "", err
+		}
+		if !h.validation.active(ctx, accessRequester, h.baseURL) {
+			return "", fosite.ErrInactiveToken
 		}
 		return accessRequester.GetClient().GetID(), nil
 	}

@@ -99,6 +99,48 @@ func TestStoreInvalidateAuthorizeCodeSessionIsAtomic(t *testing.T) {
 	require.ErrorIs(t, err, fosite.ErrInvalidatedAuthorizeCode)
 }
 
+func TestStoreInactiveAccessTokenFailsClosed(t *testing.T) {
+	db := testutils.NewDatabaseForTest(t)
+	store := NewStore(db, nil)
+	const clientID = "access-active-check-client"
+	require.NoError(t, db.Create(&model.OidcClient{
+		Base: model.Base{ID: clientID}, Name: "Access Active Check",
+	}).Error)
+	require.NoError(t, store.CreateAccessTokenSession(t.Context(), "inactive-access",
+		newTestRequester("inactive-request", clientID, "user-one", "")))
+	require.NoError(t, db.Model(&OAuth2Session{}).
+		Where("kind = ? AND key = ?", sessionKindAccessToken, "inactive-access").
+		Update("active", false).Error)
+
+	_, err := store.GetAccessTokenSession(t.Context(), "inactive-access", nil)
+	require.ErrorIs(t, err, fosite.ErrInactiveToken)
+}
+
+func TestRevokeUserClientSessionsRemovesAccessOnlyTokens(t *testing.T) {
+	db := testutils.NewDatabaseForTest(t)
+	store := NewStore(db, nil)
+	const clientID, otherClientID = "client-a", "client-b"
+	for _, id := range []string{clientID, otherClientID} {
+		require.NoError(t, db.Create(&model.OidcClient{
+			Base: model.Base{ID: id}, Name: id,
+		}).Error)
+	}
+	require.NoError(t, store.CreateAccessTokenSession(t.Context(), "revoke-target",
+		newTestRequester("req-target", clientID, "user-a", "")))
+	require.NoError(t, store.CreateAccessTokenSession(t.Context(), "keep-other-user",
+		newTestRequester("req-other-user", clientID, "user-b", "")))
+	require.NoError(t, store.CreateAccessTokenSession(t.Context(), "keep-other-client",
+		newTestRequester("req-other-client", otherClientID, "user-a", "")))
+
+	require.NoError(t, RevokeUserClientSessions(t.Context(), db, "user-a", clientID))
+	_, err := store.GetAccessTokenSession(t.Context(), "revoke-target", nil)
+	require.ErrorIs(t, err, fosite.ErrNotFound)
+	_, err = store.GetAccessTokenSession(t.Context(), "keep-other-user", nil)
+	require.NoError(t, err)
+	_, err = store.GetAccessTokenSession(t.Context(), "keep-other-client", nil)
+	require.NoError(t, err)
+}
+
 func TestStoreRevokeSessionsByIDTokenHintRevokesMatchingFositeSessions(t *testing.T) {
 	db := testutils.NewDatabaseForTest(t)
 	store := NewStore(db, nil)

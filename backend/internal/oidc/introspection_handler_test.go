@@ -19,6 +19,7 @@ import (
 	"github.com/pocket-id/fosite"
 	"github.com/stretchr/testify/require"
 
+	"github.com/pocket-id/pocket-id/backend/internal/appconfig"
 	"github.com/pocket-id/pocket-id/backend/internal/model"
 	jwkutils "github.com/pocket-id/pocket-id/backend/internal/utils/jwk"
 	testutils "github.com/pocket-id/pocket-id/backend/internal/utils/testing"
@@ -32,6 +33,11 @@ func TestIntrospectionHandlerBindsTokenToCallerClient(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	db := testutils.NewDatabaseForTest(t)
+	for _, userID := range []string{"user-a", "user-b", "user-c"} {
+		require.NoError(t, db.Create(&model.User{
+			Base: model.Base{ID: userID}, Username: userID,
+		}).Error)
+	}
 	require.NoError(t, db.Create(&model.OidcClient{Base: model.Base{ID: "client-a"}, Name: "Client A"}).Error)
 	require.NoError(t, db.Create(&model.OidcClient{Base: model.Base{ID: "client-b"}, Name: "Client B"}).Error)
 
@@ -39,7 +45,8 @@ func TestIntrospectionHandlerBindsTokenToCallerClient(t *testing.T) {
 	require.NoError(t, err)
 
 	// #nosec G101
-	provider, err := newProvider(NewStore(db, nil), nil, testTokenSigner{key: signerKey}, Config{
+	store := NewStore(db, nil)
+	provider, err := newProvider(store, nil, testTokenSigner{key: signerKey}, Config{
 		BaseURL:      "https://issuer.example.com",
 		TokenBaseURL: "https://issuer.example.com",
 		Secret:       []byte("test-secret"),
@@ -69,8 +76,12 @@ func TestIntrospectionHandlerBindsTokenToCallerClient(t *testing.T) {
 	clientAToken := issueAccessToken(t, "req-a", "client-a", "user-a")
 	clientBToken := issueAccessToken(t, "req-b", "client-b", "user-b")
 	clientBOtherToken := issueAccessToken(t, "req-b-2", "client-b", "user-b")
+	clientBVerifier := issueAccessToken(t, "req-b-3", "client-b", "user-c")
 
-	handler := newIntrospectionHandler(provider, nil, "https://issuer.example.com")
+	handler := newIntrospectionHandler(provider, nil, introspectionValidation{
+		store:  store,
+		claims: newClaimsService(db, nil, "https://issuer.example.com", nil, appconfig.StaticResolver{}),
+	}, "https://issuer.example.com")
 
 	introspect := func(t *testing.T, bearer, token string) map[string]any {
 		t.Helper()
@@ -97,6 +108,16 @@ func TestIntrospectionHandlerBindsTokenToCallerClient(t *testing.T) {
 	// A client may introspect another of its own tokens.
 	same := introspect(t, clientBToken, clientBOtherToken)
 	require.Equal(t, true, same["active"])
+
+	// The caller remains authorized but the target user is disabled after issuance
+	require.NoError(t, db.Model(&model.User{}).Where("id = ?", "user-b").
+		Update("disabled", true).Error)
+	require.Equal(t, false, introspect(t, clientBVerifier, clientBOtherToken)["active"])
+
+	// Restoring the user must not bring the previously revoked access token back
+	require.NoError(t, db.Model(&model.User{}).Where("id = ?", "user-b").
+		Update("disabled", false).Error)
+	require.Equal(t, false, introspect(t, clientBVerifier, clientBOtherToken)["active"])
 }
 
 func TestIntrospectionHandlerAllowsReusedFederatedClientAssertion(t *testing.T) {
@@ -122,6 +143,9 @@ func TestIntrospectionHandlerAllowsReusedFederatedClientAssertion(t *testing.T) 
 	require.NoError(t, jwks.AddKey(publicKey))
 
 	db := testutils.NewDatabaseForTest(t)
+	require.NoError(t, db.Create(&model.User{
+		Base: model.Base{ID: "user-a"}, Username: "user-a",
+	}).Error)
 	replayProtection := false
 	require.NoError(t, db.Create(&model.OidcClient{
 		Base: model.Base{ID: clientID},
@@ -178,7 +202,10 @@ func TestIntrospectionHandlerAllowsReusedFederatedClientAssertion(t *testing.T) 
 	signedAssertion, err := jwt.Sign(assertionToken, jwt.WithKey(signingAlg, signingKey))
 	require.NoError(t, err)
 
-	handler := newIntrospectionHandler(provider, authenticator, baseURL)
+	handler := newIntrospectionHandler(provider, authenticator, introspectionValidation{
+		store:  store,
+		claims: newClaimsService(db, nil, baseURL, nil, appconfig.StaticResolver{}),
+	}, baseURL)
 	introspect := func(t *testing.T) (int, map[string]any) {
 		t.Helper()
 		body := url.Values{

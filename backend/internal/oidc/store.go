@@ -360,8 +360,14 @@ func (s *Store) CreateAccessTokenSession(ctx context.Context, signature string, 
 }
 
 func (s *Store) GetAccessTokenSession(ctx context.Context, signature string, _ fosite.Session) (fosite.Requester, error) {
-	request, _, err := s.getRequesterSession(ctx, sessionKindAccessToken, signature)
-	return request, err
+	request, active, err := s.getRequesterSession(ctx, sessionKindAccessToken, signature)
+	if err != nil {
+		return nil, err
+	}
+	if !active {
+		return request, fosite.ErrInactiveToken
+	}
+	return request, nil
 }
 
 func (s *Store) DeleteAccessTokenSession(ctx context.Context, signature string) error {
@@ -450,7 +456,29 @@ func RevokeUserClientSessions(ctx context.Context, db *gorm.DB, userID, clientID
 	if err != nil {
 		return err
 	}
-	return s.revokeRequestIDs(ctx, requestIDs)
+	accessIDs, err := s.findAccessTokenRequestIDsForUserClient(ctx, userID, clientID)
+	if err != nil {
+		return err
+	}
+	return s.revokeRequestIDs(ctx, append(requestIDs, accessIDs...))
+}
+
+// findAccessTokenRequestIDsForUserClient covers access-only grants, which have no refresh session
+func (s *Store) findAccessTokenRequestIDsForUserClient(ctx context.Context, userID, clientID string) ([]string, error) {
+	var requestIDs []string
+	query := s.dbFor(ctx).
+		Model(&OAuth2Session{}).
+		Where("kind = ? AND client_id = ? AND active = ?", sessionKindAccessToken, clientID, true)
+	switch query.Name() {
+	case "sqlite":
+		query = query.Where("json_extract(CAST(request_data AS TEXT), '$.session.subject') = ?", userID)
+	case "postgres":
+		query = query.Where("request_data #>> '{session,subject}' = ?", userID)
+	default:
+		return nil, fmt.Errorf("unsupported database dialect: %s", query.Name())
+	}
+	err := query.Distinct("request_id").Pluck("request_id", &requestIDs).Error
+	return requestIDs, err
 }
 
 // findRefreshTokenRequestIDsForUserClient returns request IDs for usable refresh-token sessions belonging to the user and client, plus the subset matching the optional ID token JTI

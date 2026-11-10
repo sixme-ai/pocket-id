@@ -53,6 +53,48 @@ func TestDeriveGlobalSecretUsesStableValue(t *testing.T) {
 	require.Equal(t, expected, actual)
 }
 
+func TestProviderRejectsPKCEPlainAndAcceptsS256(t *testing.T) {
+	db := testutils.NewDatabaseForTest(t)
+	const clientID = "pkce-client"
+	const callback = "https://client.example.com/callback"
+	require.NoError(t, db.Create(&model.OidcClient{
+		Base: model.Base{ID: clientID}, Name: "PKCE Client",
+		CallbackURLs: datatype.StringList{callback}, IsPublic: true, PkceEnabled: true,
+	}).Error)
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	provider, err := newProvider(NewStore(db, nil), nil, testTokenSigner{key: key}, Config{
+		BaseURL: "https://issuer.example.com", TokenBaseURL: "https://issuer.example.com",
+		Secret: []byte("test-secret"),
+	}, nil)
+	require.NoError(t, err)
+
+	for _, tt := range []struct {
+		method  string
+		allowed bool
+	}{{"plain", false}, {"S256", true}} {
+		t.Run(tt.method, func(t *testing.T) {
+			params := url.Values{
+				"client_id": {clientID}, "response_type": {"code"}, "scope": {"openid"},
+				"state": {"state-with-enough-entropy"}, "redirect_uri": {callback},
+				"code_challenge":        {"E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"},
+				"code_challenge_method": {tt.method},
+			}
+			req := httptest.NewRequestWithContext(t.Context(), http.MethodGet,
+				"/api/oidc/authorize?"+params.Encode(), nil)
+			authorize, err := provider.NewAuthorizeRequest(req.Context(), req)
+			if err == nil {
+				_, err = provider.NewAuthorizeResponse(req.Context(), authorize, NewEmptySession())
+			}
+			if tt.allowed {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
+		})
+	}
+}
+
 func TestProviderIssuesJWTAccessTokens(t *testing.T) {
 	db := testutils.NewDatabaseForTest(t)
 	signerKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
