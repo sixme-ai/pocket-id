@@ -161,6 +161,8 @@ KEY_FILE = WORKLOAD_DIR / "assertion-private.pem"
 if KEY_FILE.is_symlink():
     raise RuntimeError("MCP backend assertion key must not be a symlink")
 if not KEY_FILE.exists():
+    if state.get("federated_granted"):
+        raise RuntimeError("Existing federated workload key is missing; refuse silent rotation")
     backend_key = rsa.generate_private_key(public_exponent=65537, key_size=3072)
     private_bytes = backend_key.private_bytes(
         encoding=serialization.Encoding.PEM,
@@ -191,18 +193,22 @@ if not state.get("federated_granted"):
         "callbackURLs": [CALLBACK],
         "credentials": {"federatedIdentities": [identity]}}, admin=True)
     expect(status, obj, 200, "Configure federated workload on same public PKCE client")
-    status, client = request("GET", "/api/oidc/clients/" + state["human_client_id"], admin=True)
-    expect(status, client, 200, "Read back federated public client")
-    identities = (client.get("credentials") or {}).get("federatedIdentities") or []
-    if not any(x.get("issuer") == workload_issuer and x.get("replayProtection")
-               and x.get("publicKeys") for x in identities):
-        raise RuntimeError("Public client did not retain federated workload identity")
     state.update(federated_granted=True, workload_kid=key_id,
                  workload_key_path=str(KEY_FILE), workload_issuer=workload_issuer,
                  workload_subject=workload_subject, workload_audience=BASE)
     save(state)
 elif state.get("workload_kid") != key_id or state.get("workload_key_path") != str(KEY_FILE):
     raise RuntimeError("Existing workload identity does not match retained private key")
+# Recheck on EVERY start, not only initial provisioning, to reject stale JWK or key drift.
+status, client = request("GET", "/api/oidc/clients/" + state["human_client_id"], admin=True)
+expect(status, client, 200, "Read back federated public client")
+identities = (client.get("credentials") or {}).get("federatedIdentities") or []
+if not any(x.get("issuer") == workload_issuer
+           and x.get("subject") == workload_subject
+           and x.get("audience") == BASE
+           and x.get("replayProtection") is True
+           and jwk in (x.get("publicKeys") or []) for x in identities):
+    raise RuntimeError("Public client federated JWK differs from retained backend key")
 print("Same-client federated workload identity with backend-only RSA and replay prevention: PASS")
 
 
