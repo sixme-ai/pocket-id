@@ -12,13 +12,13 @@ WORKDIR /app
 
 COPY --chown=vp:vp package.json pnpm-workspace.yaml pnpm-lock.yaml .node-version ./
 COPY --chown=vp:vp --parents frontend/package.json tests/package.json email-templates/package.json ./
-RUN --mount=type=cache,id=pocket-id-pnpm,target=/home/vp/.local/share/pnpm/store,sharing=locked,uid=1000,gid=1000 \
+RUN --mount=type=cache,id=s/64e06c73-c561-494c-bf05-e6576855ad2c-/home/vp/.local/share/pnpm/store,target=/home/vp/.local/share/pnpm/store,sharing=locked,uid=1000,gid=1000 \
   vp -C frontend install --frozen-lockfile --prefer-offline
 
 COPY --chown=vp:vp ./frontend ./frontend/
 
-RUN --mount=type=cache,target=/app/frontend/node_modules/.vite,uid=1000,gid=1000 \
-  --mount=type=cache,target=/app/frontend/.svelte-kit,uid=1000,gid=1000 \
+RUN --mount=type=cache,id=s/64e06c73-c561-494c-bf05-e6576855ad2c-/app/frontend/node_modules/.vite,target=/app/frontend/node_modules/.vite,uid=1000,gid=1000 \
+  --mount=type=cache,id=s/64e06c73-c561-494c-bf05-e6576855ad2c-/app/frontend/.svelte-kit,target=/app/frontend/.svelte-kit,uid=1000,gid=1000 \
   BUILD_OUTPUT_PATH=dist vp -C frontend run build
 
 # Stage 2: Build Backend
@@ -26,7 +26,7 @@ FROM golang:1.27.3-alpine AS backend-builder
 ARG BUILD_TAGS
 WORKDIR /build
 COPY ./backend/go.mod ./backend/go.sum ./
-RUN --mount=type=cache,target=/go/pkg/mod \
+RUN --mount=type=cache,id=s/64e06c73-c561-494c-bf05-e6576855ad2c-/go/pkg/mod,target=/go/pkg/mod \
   go mod download
 
 COPY ./backend ./
@@ -34,8 +34,8 @@ COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 COPY .version .version
 
 WORKDIR /build/cmd
-RUN --mount=type=cache,target=/go/pkg/mod \
-  --mount=type=cache,target=/root/.cache/go-build \
+RUN --mount=type=cache,id=s/64e06c73-c561-494c-bf05-e6576855ad2c-/go/pkg/mod,target=/go/pkg/mod \
+  --mount=type=cache,id=s/64e06c73-c561-494c-bf05-e6576855ad2c-/root/.cache/go-build,target=/root/.cache/go-build \
   VERSION=$(cat /build/.version) && \
   CGO_ENABLED=0 \
   GOOS=linux \
