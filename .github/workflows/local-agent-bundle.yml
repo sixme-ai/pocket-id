@@ -152,6 +152,7 @@ jobs:
           from pathlib import Path
           installed = Path(os.environ["INSTALL_DIR"])
           auth = json.loads((installed / ".local-oauth.json").read_text())
+          assert auth["resource"] == "http://localhost:18080/mcp"
           assert auth["human_client_id"] and auth["m2m_client_id"]
           assert auth["m2m_client_secret"] and auth["human_granted"]
           opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))

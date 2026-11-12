@@ -13,7 +13,7 @@ import urllib.request
 ROOT = Path(sys.executable if getattr(sys, "frozen", False) else __file__).resolve().parent
 BASE = "http://localhost:1411"
 STATE = ROOT / ".local-oauth.json"
-RESOURCE = os.environ.get("LOCAL_MCP_RESOURCE", "http://localhost:8080/mcp")
+RESOURCE = os.environ.get("LOCAL_MCP_RESOURCE", "http://localhost:18080/mcp")
 CALLBACK = os.environ.get("LOCAL_OAUTH_CALLBACK", "http://localhost:3000/callback")
 for item in (RESOURCE, CALLBACK):
     parsed = urllib.parse.urlparse(item)

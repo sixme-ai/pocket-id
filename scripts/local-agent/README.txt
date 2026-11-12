@@ -21,7 +21,7 @@ Pocket ID Local Agent Test Installer (.run, Linux x86_64 only)
 9. Stop with ~/.local/share/pocket-id-local-agent/stop.sh (or the custom path).
    Uninstall manually only after stopping and preserving any needed local data.
 
-Default MCP resource: http://localhost:8080/mcp
+Default MCP resource: http://localhost:18080/mcp
 Default human OAuth callback: http://localhost:3000/callback
 Override only with loopback URLs via LOCAL_MCP_RESOURCE and LOCAL_OAUTH_CALLBACK.
 
