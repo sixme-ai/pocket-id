@@ -3,6 +3,9 @@
 import base64
 import json
 import os
+import secrets
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 import sys
 from pathlib import Path
 import time
@@ -145,6 +148,63 @@ if not state.get("human_granted"):
     expect(status, obj, 200, "Grant human PKCE access")
     state["human_granted"] = True
     save(state)
+
+# Provision one unique test-only RSA workload for federated introspection on the SAME
+# public human client. Never bundle private key bytes, a reusable assertion, or a client secret.
+# The backend-only identity lives next to (not inside) the Pocket ID installation.
+WORKLOAD_DIR = ROOT.parent / (ROOT.name + "-mcp-workload")
+if WORKLOAD_DIR.is_symlink():
+    raise RuntimeError("MCP workload directory must not be a symlink")
+WORKLOAD_DIR.mkdir(mode=0o700, exist_ok=True)
+os.chmod(WORKLOAD_DIR, 0o700)
+KEY_FILE = WORKLOAD_DIR / "assertion-private.pem"
+if KEY_FILE.is_symlink():
+    raise RuntimeError("MCP backend assertion key must not be a symlink")
+if not KEY_FILE.exists():
+    backend_key = rsa.generate_private_key(public_exponent=65537, key_size=3072)
+    private_bytes = backend_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption())
+    fd = os.open(KEY_FILE, os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, "O_NOFOLLOW", 0), 0o600)
+    with os.fdopen(fd, "wb") as output:
+        output.write(private_bytes)
+if (not KEY_FILE.is_file() or KEY_FILE.stat().st_mode & 0o077):
+    raise RuntimeError("Private MCP assertion key has unsafe permissions")
+private_key = serialization.load_pem_private_key(KEY_FILE.read_bytes(), password=None)
+if not isinstance(private_key, rsa.RSAPrivateKey) or private_key.key_size < 3072:
+    raise RuntimeError("MCP backend assertion key has unsafe algorithm or size")
+numbers = private_key.public_key().public_numbers()
+def jwk_integer(value):
+    raw = value.to_bytes((value.bit_length() + 7) // 8, "big")
+    return base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")
+key_id = state.get("workload_kid") or secrets.token_hex(12)
+workload_issuer = BASE + "/local-mcp-workload"
+workload_subject = "local-github-mcp"
+jwk = {"kty": "RSA", "use": "sig", "alg": "RS256", "kid": key_id,
+       "n": jwk_integer(numbers.n), "e": jwk_integer(numbers.e)}
+identity = {"issuer": workload_issuer, "subject": workload_subject,
+            "audience": BASE, "publicKeys": [jwk], "replayProtection": True}
+if not state.get("federated_granted"):
+    status, obj = request("PUT", "/api/oidc/clients/" + state["human_client_id"], {
+        "name": "Local Human PKCE", "isPublic": True, "pkceEnabled": True,
+        "callbackURLs": [CALLBACK],
+        "credentials": {"federatedIdentities": [identity]}}, admin=True)
+    expect(status, obj, 200, "Configure federated workload on same public PKCE client")
+    status, client = request("GET", "/api/oidc/clients/" + state["human_client_id"], admin=True)
+    expect(status, client, 200, "Read back federated public client")
+    identities = (client.get("credentials") or {}).get("federatedIdentities") or []
+    if not any(x.get("issuer") == workload_issuer and x.get("replayProtection")
+               and x.get("publicKeys") for x in identities):
+        raise RuntimeError("Public client did not retain federated workload identity")
+    state.update(federated_granted=True, workload_kid=key_id,
+                 workload_key_path=str(KEY_FILE), workload_issuer=workload_issuer,
+                 workload_subject=workload_subject, workload_audience=BASE)
+    save(state)
+elif state.get("workload_kid") != key_id or state.get("workload_key_path") != str(KEY_FILE):
+    raise RuntimeError("Existing workload identity does not match retained private key")
+print("Same-client federated workload identity with backend-only RSA and replay prevention: PASS")
+
 
 # Authenticate against the real token endpoint and reject a wrong client secret.
 form = {"grant_type": "client_credentials", "client_id": state["m2m_client_id"],

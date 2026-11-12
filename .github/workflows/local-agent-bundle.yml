@@ -78,7 +78,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m venv "$RUNNER_TEMP/pocket-bootstrap-venv"
-          "$RUNNER_TEMP/pocket-bootstrap-venv/bin/python" -m pip install --disable-pip-version-check --no-input 'pyinstaller==6.16.0'
+          "$RUNNER_TEMP/pocket-bootstrap-venv/bin/python" -m pip install --disable-pip-version-check --no-input 'pyinstaller==6.16.0' 'cryptography==46.0.3'
           "$RUNNER_TEMP/pocket-bootstrap-venv/bin/pyinstaller" --noconfirm --clean --onefile --name bootstrap \
             --distpath dist/local-agent --workpath "$RUNNER_TEMP/pyinstaller-work" \
             --specpath "$RUNNER_TEMP" scripts/local-agent/bootstrap.py
@@ -154,6 +154,11 @@ jobs:
           auth = json.loads((installed / ".local-oauth.json").read_text())
           assert auth["resource"] == "http://localhost:18080/mcp"
           assert auth["human_client_id"] and auth["m2m_client_id"]
+          assert auth["federated_granted"] and auth["workload_kid"]
+          from pathlib import Path
+          key = Path(auth["workload_key_path"])
+          assert key.is_file() and key.stat().st_mode & 0o077 == 0
+          assert key.parent != installed and key.parent.stat().st_mode & 0o077 == 0
           assert auth["m2m_client_secret"] and auth["human_granted"]
           opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
           with opener.open("http://localhost:1411/", timeout=5) as reply:
