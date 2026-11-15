@@ -1,0 +1,325 @@
+<script lang="ts" generics="T extends {id:string}">
+	import { goto } from '$app/navigation';
+	import { page as currentPage } from '$app/state';
+	import ActionsMenu from '#lib/components/actions-menu.svelte';
+	import ListPagination from '#lib/components/list-pagination.svelte';
+	import Checkbox from '#lib/components/ui/checkbox/checkbox.svelte';
+	import * as Table from '#lib/components/ui/table/index.js';
+	import Empty from '#lib/icons/empty.svelte';
+	import { m } from '#lib/paraglide/messages.js';
+	import type {
+		AdvancedTableColumn,
+		CreateAdvancedTableActions
+	} from '#lib/types/advanced-table.type.ts';
+	import type { ListRequestOptions, Paginated, SortRequest } from '#lib/types/list-request.type.ts';
+	import { cn } from '#lib/utils/style.ts';
+	import { ChevronDown } from '@lucide/svelte';
+	import { PersistedState } from 'runed';
+	import { onMount } from 'svelte';
+	import { fade } from 'svelte/transition';
+	import Button from '../ui/button/button.svelte';
+	import { Skeleton } from '../ui/skeleton';
+	import AdvancedTableToolbar from './advanced-table-toolbar.svelte';
+
+	let {
+		id,
+		selectedIds = $bindable(),
+		withoutSearch = false,
+		selectionDisabled = false,
+		onRowClick,
+		rowSelectionDisabled,
+		fetchCallback,
+		defaultSort,
+		columns,
+		actions
+	}: {
+		id: string;
+		selectedIds?: string[];
+		withoutSearch?: boolean;
+		selectionDisabled?: boolean;
+		rowSelectionDisabled?: (item: T) => boolean;
+		fetchCallback: (requestOptions: ListRequestOptions) => Promise<Paginated<T>>;
+		defaultSort?: SortRequest;
+		columns: AdvancedTableColumn<T>[];
+		onRowClick?: (item: T) => void;
+		actions?: CreateAdvancedTableActions<T>;
+	} = $props();
+
+	let items: Paginated<T> | undefined = $state();
+	let searchValue = $state('');
+
+	const availablePageSizes: number[] = [20, 50, 100];
+
+	type TablePreferences = {
+		visibleColumns: string[];
+		paginationLimit: number;
+		sort?: SortRequest;
+		filters?: Record<string, (string | boolean)[]>;
+		length?: number;
+	};
+
+	const tablePreferences = new PersistedState<TablePreferences>(`table-${id}-preferences`, {
+		visibleColumns: columns.filter((c) => !c.hidden).map((c) => c.column ?? c.key!),
+		paginationLimit: 20,
+		filters: initializeFilters()
+	});
+
+	const requestOptions = $state<ListRequestOptions>({
+		sort: tablePreferences.current.sort ?? defaultSort,
+		pagination: { limit: tablePreferences.current.paginationLimit, page: 1 },
+		filters: tablePreferences.current.filters
+	});
+
+	let visibleColumns = $derived(
+		columns.filter(
+			(c) => tablePreferences.current.visibleColumns?.includes(c.column ?? c.key!) ?? []
+		)
+	);
+
+	onMount(async () => {
+		const urlParams = new URLSearchParams(window.location.search);
+		const page = parseInt(urlParams.get(`${id}-page`) ?? '') || undefined;
+		if (page) {
+			requestOptions.pagination!.page = page;
+		}
+		await refresh();
+	});
+
+	let allChecked = $derived.by(() => {
+		if (!selectedIds || !items || items.data.length === 0) return false;
+		for (const item of items!.data) {
+			if (!selectedIds.includes(item.id)) {
+				return false;
+			}
+		}
+		return true;
+	});
+
+	async function onAllCheck(checked: boolean) {
+		const pageIds = items!.data
+			.filter((item) => !rowSelectionDisabled?.(item))
+			.map((item) => item.id);
+		const current = selectedIds ?? [];
+
+		if (checked) {
+			selectedIds = Array.from(new Set([...current, ...pageIds]));
+		} else {
+			selectedIds = current.filter((id) => !pageIds.includes(id));
+		}
+	}
+
+	async function onCheck(checked: boolean, id: string) {
+		const current = selectedIds ?? [];
+		if (checked) {
+			selectedIds = Array.from(new Set([...current, id]));
+		} else {
+			selectedIds = current.filter((selectedId) => selectedId !== id);
+		}
+	}
+
+	async function onPageChange(page: number) {
+		await changePageState(page);
+		await refresh();
+	}
+
+	async function onPageSizeChange(size: number) {
+		requestOptions.pagination = { limit: size, page: 1 };
+		tablePreferences.current.paginationLimit = size;
+		await refresh();
+	}
+
+	async function onFilterChange(selected: Set<string | boolean>, column: string) {
+		requestOptions.filters = {
+			...requestOptions.filters,
+			[column]: Array.from(selected)
+		};
+		tablePreferences.current.filters = requestOptions.filters;
+		await refresh();
+	}
+
+	async function onSort(column?: string) {
+		if (!column) return;
+
+		const isSameColumn = requestOptions.sort?.column === column;
+		const nextDirection: 'asc' | 'desc' =
+			isSameColumn && requestOptions.sort?.direction === 'asc' ? 'desc' : 'asc';
+
+		requestOptions.sort = { column, direction: nextDirection };
+		tablePreferences.current.sort = requestOptions.sort;
+		await refresh();
+	}
+
+	async function changePageState(page: number) {
+		const url = new URL(window.location.href);
+		url.searchParams.set(`${id}-page`, page.toString());
+		await goto(url, { shallow: true, replace: true, state: currentPage.state });
+		requestOptions.pagination!.page = page;
+	}
+
+	function updateListLength(totalItems: number) {
+		tablePreferences.current.length =
+			totalItems > tablePreferences.current.paginationLimit
+				? tablePreferences.current.paginationLimit
+				: totalItems;
+	}
+
+	function initializeFilters() {
+		const filters: Record<string, (string | boolean)[]> = {};
+		columns.forEach((c) => {
+			if (c.filterableValues) {
+				filters[c.column!] = [];
+			}
+		});
+		return filters;
+	}
+
+	function getPrimaryAction(item: T) {
+		if (!actions) return null;
+		const availableActions = actions(item).filter((a) => a.primary);
+		return availableActions.length > 0 ? () => availableActions[0].onClick(item) : null;
+	}
+
+	export async function refresh() {
+		items = await fetchCallback(requestOptions);
+		await changePageState(items.pagination.currentPage);
+		updateListLength(items.pagination.totalItems);
+	}
+</script>
+
+<AdvancedTableToolbar
+	{columns}
+	bind:visibleColumns={tablePreferences.current.visibleColumns}
+	{requestOptions}
+	{searchValue}
+	{withoutSearch}
+	{refresh}
+	{onFilterChange}
+/>
+
+{#if (items?.pagination.totalItems === 0 && searchValue === '') || tablePreferences.current.length === 0}
+	<div class="my-5 flex flex-col items-center">
+		<Empty class="text-muted-foreground h-20" />
+		<p class="text-muted-foreground mt-3 text-sm">{m.no_items_found()}</p>
+	</div>
+{:else}
+	{#if !items}
+		<div>
+			{#each Array.from({ length: (tablePreferences.current.length || 10) + 1 }, (_, i) => i) as i (i)}
+				<div>
+					<Skeleton class="mt-3 h-[45px] w-full rounded-lg" />
+				</div>
+			{/each}
+		</div>
+	{:else}
+		<div in:fade>
+			<Table.Root class="min-w-full table-auto">
+				<Table.Header>
+					<Table.Row>
+						{#if selectedIds}
+							<Table.Head class="w-12">
+								<Checkbox
+									disabled={selectionDisabled}
+									checked={allChecked}
+									onCheckedChange={(c: boolean) => onAllCheck(c as boolean)}
+								/>
+							</Table.Head>
+						{/if}
+
+						{#each visibleColumns as column (column.key ?? column.column ?? column.label)}
+							<Table.Head
+								class={cn(column.sortable && 'p-0')}
+								aria-sort={column.sortable
+									? requestOptions.sort?.column === column.column
+										? requestOptions.sort?.direction === 'asc'
+											? 'ascending'
+											: 'descending'
+										: 'none'
+									: undefined}
+							>
+								{#if column.sortable}
+									<Button
+										variant="ghost"
+										class="h-12 w-full justify-start px-4 font-medium hover:bg-transparent"
+										onclick={() => onSort(column.column)}
+									>
+										<span class="flex w-full items-center">
+											{column.label}
+											<ChevronDown
+												class={cn(
+													'ml-2 size-4 transition-all',
+													requestOptions.sort?.column === column.column
+														? requestOptions.sort?.direction === 'asc'
+															? 'rotate-180 opacity-100'
+															: 'opacity-100'
+														: 'opacity-0'
+												)}
+											/>
+										</span>
+									</Button>
+								{:else}
+									{column.label}
+								{/if}
+							</Table.Head>
+						{/each}
+						{#if actions}
+							<Table.Head align="right" class="bg-card sticky right-0 z-10 w-12">
+								<span class="sr-only">{m.actions()}</span>
+							</Table.Head>
+						{/if}
+					</Table.Row>
+				</Table.Header>
+				<Table.Body>
+					{#each items.data as item (item.id)}
+						<Table.Row
+							class={{
+								'group/row': true,
+								'bg-muted/20': selectedIds?.includes(item.id),
+								'cursor-pointer': getPrimaryAction(item) || onRowClick
+							}}
+							onclick={onRowClick ? () => onRowClick(item) : getPrimaryAction(item)}
+						>
+							{#if selectedIds}
+								<Table.Cell class="w-12">
+									<Checkbox
+										disabled={selectionDisabled || rowSelectionDisabled?.(item)}
+										checked={selectedIds.includes(item.id)}
+										onCheckedChange={(c: boolean) => onCheck(c, item.id)}
+									/>
+								</Table.Cell>
+							{/if}
+							{#each visibleColumns as column (column.key ?? column.column ?? column.label)}
+								<Table.Cell>
+									{#if column.value}
+										{column.value(item)}
+									{:else if column.cell}
+										{@render column.cell({ item })}
+									{:else if column.column && typeof item[column.column] === 'boolean'}
+										{item[column.column] ? m.yes() : m.no()}
+									{:else if column.column}
+										{item[column.column]}
+									{/if}
+								</Table.Cell>
+							{/each}
+							{#if actions}
+								<!-- Pinned to the right edge so the actions stay reachable when the table scrolls horizontally -->
+								<Table.Cell
+									align="right"
+									class="bg-card sticky right-0 z-10 w-12 py-0 transition-colors group-hover/row:bg-[color-mix(in_oklab,var(--color-muted)_50%,var(--color-card))]"
+								>
+									<ActionsMenu {item} actions={actions(item)} />
+								</Table.Cell>
+							{/if}
+						</Table.Row>
+					{/each}
+				</Table.Body>
+			</Table.Root>
+		</div>
+	{/if}
+
+	<ListPagination
+		pagination={items?.pagination}
+		pageSizes={availablePageSizes}
+		{onPageChange}
+		{onPageSizeChange}
+	/>
+{/if}

@@ -1,0 +1,122 @@
+package oidc
+
+import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/pocket-id/pocket-id/backend/internal/appconfig"
+	"github.com/pocket-id/pocket-id/backend/internal/model"
+	testutils "github.com/pocket-id/pocket-id/backend/internal/utils/testing"
+)
+
+func TestClientPreviewBuilderUsesFositeTokenStrategies(t *testing.T) {
+	db := testutils.NewDatabaseForTest(t)
+	signerKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+
+	// #nosec G101
+	provider, err := newProvider(NewStore(db, nil), nil, testTokenSigner{key: signerKey}, Config{
+		BaseURL:      "https://issuer.example.com",
+		TokenBaseURL: "https://issuer.example.com",
+		Secret:       []byte("test-secret"),
+	}, nil)
+	require.NoError(t, err)
+
+	builder := newClientPreviewBuilder(newClaimsService(db, nil, "https://issuer.example.com", nil, appconfig.StaticResolver{}), provider.tokenStrategies)
+
+	const (
+		userID   = "test-user"
+		clientID = "test-client"
+	)
+	email := "user@example.com"
+	require.NoError(t, db.Create(&model.User{
+		Base:          model.Base{ID: userID},
+		Username:      "test-user",
+		Email:         &email,
+		EmailVerified: true,
+	}).Error)
+
+	preview, err := builder.BuildClientPreview(t.Context(), model.OidcClient{
+		Base:                       model.Base{ID: clientID},
+		Name:                       "Test Client",
+		AccessTokenDurationMinutes: 2 * 60,
+	}, userID, []string{"openid", "email"}, "phr")
+	require.NoError(t, err)
+
+	require.Equal(t, "https://issuer.example.com", preview.AccessToken["iss"])
+	require.Equal(t, clientID, preview.AccessToken["client_id"])
+	require.ElementsMatch(t, []string{"openid", "email"}, stringSliceClaim(t, preview.AccessToken["scp"]))
+	// The identity scopes add the issuer to the audience so the previewed token would also work at /userinfo
+	require.ElementsMatch(t, []string{clientID, "https://issuer.example.com"}, stringSliceClaim(t, preview.AccessToken["aud"]))
+	require.NotContains(t, preview.AccessToken, "type")
+	issuedAt, ok := preview.AccessToken["iat"].(time.Time)
+	require.Truef(t, ok, "expected time.Time iat, got %T", preview.AccessToken["iat"])
+	expiresAt, ok := preview.AccessToken["exp"].(time.Time)
+	require.Truef(t, ok, "expected time.Time exp, got %T", preview.AccessToken["exp"])
+	require.Equal(t, 2*time.Hour, expiresAt.Sub(issuedAt))
+
+	require.Equal(t, userID, preview.IDToken["sub"])
+	// ID tokens carry the "type" marker (so the end-session endpoint can reject access tokens
+	// passed as id_token_hint) and the amr from the authentication method.
+	require.Equal(t, idTokenType, preview.IDToken["type"])
+	require.ElementsMatch(t, []string{"phr"}, stringSliceClaim(t, preview.IDToken["amr"]))
+
+	require.Equal(t, email, preview.UserInfo["email"])
+	require.Equal(t, true, preview.UserInfo["email_verified"])
+}
+
+func TestClientPreviewBuilderIgnoresUnknownScopes(t *testing.T) {
+	db := testutils.NewDatabaseForTest(t)
+	signerKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+
+	// #nosec G101
+	provider, err := newProvider(NewStore(db, nil), nil, testTokenSigner{key: signerKey}, Config{
+		BaseURL:      "https://issuer.example.com",
+		TokenBaseURL: "https://issuer.example.com",
+		Secret:       []byte("test-secret"),
+	}, nil)
+	require.NoError(t, err)
+
+	require.NoError(t, db.Create(&model.User{
+		Base:     model.Base{ID: "test-user"},
+		Username: "test-user",
+	}).Error)
+
+	// The preview mirrors the authorize endpoint: unknown scopes are dropped
+	// from the previewed tokens instead of failing the preview.
+	builder := newClientPreviewBuilder(newClaimsService(db, nil, "https://issuer.example.com", nil, appconfig.StaticResolver{}), provider.tokenStrategies)
+	preview, err := builder.BuildClientPreview(t.Context(), model.OidcClient{
+		Base: model.Base{ID: "test-client"},
+		Name: "Test Client",
+	}, "test-user", []string{"openid", "unknown"}, "")
+	require.NoError(t, err)
+	require.ElementsMatch(t, []string{"openid"}, stringSliceClaim(t, preview.AccessToken["scp"]))
+}
+
+func stringSliceClaim(t *testing.T, value any) []string {
+	t.Helper()
+
+	switch typed := value.(type) {
+	case []string:
+		return typed
+	case []any:
+		values := make([]string, 0, len(typed))
+		for _, item := range typed {
+			value, ok := item.(string)
+			require.Truef(t, ok, "expected string claim item, got %T", item)
+			values = append(values, value)
+		}
+		return values
+	case string:
+		return []string{typed}
+	default:
+		require.Failf(t, "unexpected claim type", "expected string slice claim, got %T", value)
+		return nil
+	}
+}

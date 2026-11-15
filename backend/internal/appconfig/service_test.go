@@ -1,0 +1,559 @@
+package appconfig
+
+import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+
+	"github.com/italypaleale/francis/host/local"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
+
+	"github.com/pocket-id/pocket-id/backend/internal/apperror"
+	"github.com/pocket-id/pocket-id/backend/internal/common"
+	"github.com/pocket-id/pocket-id/backend/internal/dto"
+	"github.com/pocket-id/pocket-id/backend/internal/model"
+	testutils "github.com/pocket-id/pocket-id/backend/internal/utils/testing"
+)
+
+// setUIConfigDisabled sets common.EnvConfig.UiConfigDisabled for the duration of the test, restoring the previous global afterwards
+func setUIConfigDisabled(t *testing.T, disabled bool) {
+	t.Helper()
+
+	original := common.EnvConfig
+	t.Cleanup(func() {
+		common.EnvConfig = original
+	})
+	common.EnvConfig.UiConfigDisabled = disabled
+}
+
+// newActorBackedService creates an AppConfigService wired to an in-memory test actor host.
+// The AppConfig singleton actor is registered and bootstrapped from db, which is also used to load any legacy config.
+func newActorBackedService(t *testing.T, db *gorm.DB) *AppConfigService {
+	t.Helper()
+
+	var svc *AppConfigService
+	testutils.NewActorHostForTest(t, func(t *testing.T, h *local.Host) {
+		var err error
+		svc, err = NewService(t.Context(), h, db)
+		require.NoError(t, err)
+	})
+	require.NotNil(t, svc)
+
+	// The singleton actor is bootstrapped asynchronously once the host is ready.
+	// Before bootstrap runs, the actor has no state and GetConfig decodes it into a non-nil but zero config, so wait until a non-zero (bootstrapped) config is available before returning.
+	require.Eventually(t, func() bool {
+		cfg, err := svc.GetConfig(t.Context())
+		return err == nil && cfg != nil && *cfg != (AppConfigModel{})
+	}, 10*time.Second, 20*time.Millisecond, "config actor was not bootstrapped in time")
+
+	return svc
+}
+
+// seedLegacyConfig writes a legacy config blob to the kv table so the AppConfig actor bootstraps from it.
+func seedLegacyConfig(t *testing.T, db *gorm.DB, values map[string]string) {
+	t.Helper()
+
+	blob, err := json.Marshal(values)
+	require.NoError(t, err)
+
+	value := string(blob)
+	err = db.Create(&model.KV{Key: "config_migrated", Value: &value}).Error
+	require.NoError(t, err)
+}
+
+// findConfigValue returns the value for key in a slice of AppConfigVariable, and whether it was found.
+func findConfigValue(vars []AppConfigVariable, key string) (string, bool) {
+	for _, v := range vars {
+		if v.Key == key {
+			return v.Value, true
+		}
+	}
+	return "", false
+}
+
+func TestService_NewService(t *testing.T) {
+	t.Run("bootstraps the default config when the database is empty", func(t *testing.T) {
+		setUIConfigDisabled(t, false)
+		db := testutils.NewDatabaseForTest(t)
+		svc := newActorBackedService(t, db)
+
+		cfg, err := svc.GetConfig(t.Context())
+		require.NoError(t, err)
+		require.NotNil(t, cfg)
+		assert.Equal(t, *getDefaultConfig(), *cfg)
+	})
+
+	t.Run("bootstraps from the legacy config in the database", func(t *testing.T) {
+		setUIConfigDisabled(t, false)
+		db := testutils.NewDatabaseForTest(t)
+		seedLegacyConfig(t, db, map[string]string{
+			"appName":     "Legacy App",
+			"ldapEnabled": "true",
+		})
+
+		svc := newActorBackedService(t, db)
+
+		cfg, err := svc.GetConfig(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, AppConfigValue("Legacy App"), cfg.AppName)
+		assert.Equal(t, AppConfigValue("true"), cfg.LdapEnabled)
+		// Keys not present in the legacy config keep their defaults
+		assert.Equal(t, getDefaultConfig().SessionDuration, cfg.SessionDuration)
+	})
+
+	t.Run("loads config from the environment when the UI config is disabled", func(t *testing.T) {
+		setUIConfigDisabled(t, true)
+		t.Setenv("APP_NAME", "Environment App")
+		t.Setenv("SIGNUP_DEFAULT_CUSTOM_CLAIMS", `[{"key":"role","value":"user"}]`)
+
+		// No actor host or database is needed when the UI config is disabled
+		svc, err := NewService(t.Context(), nil, nil)
+		require.NoError(t, err)
+		require.NotNil(t, svc)
+
+		cfg, err := svc.GetConfig(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, AppConfigValue("Environment App"), cfg.AppName)
+		assert.JSONEq(t, `[{"key":"role","value":"user"}]`, string(cfg.SignupDefaultCustomClaims))
+	})
+
+	t.Run("rejects invalid environment application configuration", func(t *testing.T) {
+		tests := []struct {
+			name       string
+			envName    string
+			value      string
+			wantDetail string
+		}{
+			{
+				name:       "malformed custom claims JSON",
+				envName:    "SIGNUP_DEFAULT_CUSTOM_CLAIMS",
+				value:      `["immich_role": "user"]`,
+				wantDetail: `JSON array of objects with string "key" and "value" properties`,
+			},
+			{
+				name:       "custom claim missing value",
+				envName:    "SIGNUP_DEFAULT_CUSTOM_CLAIMS",
+				value:      `[{"key":"role"}]`,
+				wantDetail: `JSON array of objects with string "key" and "value" properties`,
+			},
+			{
+				name:       "user group IDs with the wrong shape",
+				envName:    "SIGNUP_DEFAULT_USER_GROUP_IDS",
+				value:      `{"group":"id"}`,
+				wantDetail: "JSON array of strings",
+			},
+			{
+				name:       "unsafe CIMD URL pattern",
+				envName:    "CIMD_URL_ALLOWLIST",
+				value:      `["javascript:alert(1)"]`,
+				wantDetail: "JSON array of valid callback URL patterns",
+			},
+			{
+				name:       "invalid enum",
+				envName:    "WEBAUTHN_USER_VERIFICATION",
+				value:      "sometimes",
+				wantDetail: "is invalid",
+			},
+			{
+				name:       "invalid boolean type",
+				envName:    "REQUIRE_USER_EMAIL",
+				value:      "hello",
+				wantDetail: "must be either true or false",
+			},
+			{
+				name:       "invalid integer type",
+				envName:    "SESSION_DURATION",
+				value:      "hello",
+				wantDetail: "must be an integer",
+			},
+		}
+
+		for _, test := range tests {
+			t.Run(test.name, func(t *testing.T) {
+				setUIConfigDisabled(t, true)
+				t.Setenv(test.envName, test.value)
+
+				svc, err := NewService(t.Context(), nil, nil)
+				require.Error(t, err)
+				assert.Nil(t, svc)
+				require.ErrorContains(t, err, test.envName)
+				require.ErrorContains(t, err, test.wantDetail)
+			})
+		}
+	})
+}
+
+func TestService_GetConfig(t *testing.T) {
+	t.Run("returns a fresh copy on each call", func(t *testing.T) {
+		setUIConfigDisabled(t, false)
+		db := testutils.NewDatabaseForTest(t)
+		svc := newActorBackedService(t, db)
+
+		first, err := svc.GetConfig(t.Context())
+		require.NoError(t, err)
+
+		// Mutating the returned config must not affect what the service returns later
+		first.AppName = "Mutated"
+
+		second, err := svc.GetConfig(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, getDefaultConfig().AppName, second.AppName)
+	})
+
+	t.Run("returns the env config when the UI config is disabled", func(t *testing.T) {
+		setUIConfigDisabled(t, true)
+		svc := NewTestAppConfigService(&AppConfigModel{AppName: "From Env"})
+
+		cfg, err := svc.GetConfig(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, AppConfigValue("From Env"), cfg.AppName)
+	})
+}
+
+func TestService_UpdateAppConfig(t *testing.T) {
+	t.Run("replaces the configuration and returns all variables", func(t *testing.T) {
+		setUIConfigDisabled(t, false)
+		db := testutils.NewDatabaseForTest(t)
+		svc := newActorBackedService(t, db)
+
+		input := dto.AppConfigUpdateDto{
+			AppName:         "Replaced App",
+			SessionDuration: "120",
+			LdapEnabled:     "true",
+			SmtpTls:         "tls",
+		}
+		res, err := svc.UpdateAppConfig(t.Context(), input)
+		require.NoError(t, err)
+
+		// The returned slice includes all variables, both public and private
+		got, ok := findConfigValue(res, "appName")
+		require.True(t, ok)
+		assert.Equal(t, "Replaced App", got)
+		got, ok = findConfigValue(res, "smtpTls")
+		require.True(t, ok, "the returned slice should include private variables")
+		assert.Equal(t, "tls", got)
+
+		// The change is persisted and visible on subsequent reads
+		cfg, err := svc.GetConfig(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, AppConfigValue("Replaced App"), cfg.AppName)
+		assert.Equal(t, AppConfigValue("120"), cfg.SessionDuration)
+		assert.Equal(t, AppConfigValue("true"), cfg.LdapEnabled)
+	})
+
+	t.Run("resets fields omitted from the DTO to their defaults", func(t *testing.T) {
+		setUIConfigDisabled(t, false)
+		db := testutils.NewDatabaseForTest(t)
+		svc := newActorBackedService(t, db)
+
+		// First set some non-default values
+		_, err := svc.UpdateAppConfig(t.Context(), dto.AppConfigUpdateDto{
+			AppName:     "First",
+			LdapEnabled: "true",
+			SmtpTls:     "tls",
+		})
+		require.NoError(t, err)
+
+		// Replace again with only AppName set: the rest must reset to their defaults
+		_, err = svc.UpdateAppConfig(t.Context(), dto.AppConfigUpdateDto{AppName: "Second"})
+		require.NoError(t, err)
+
+		cfg, err := svc.GetConfig(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, AppConfigValue("Second"), cfg.AppName)
+		assert.Equal(t, getDefaultConfig().LdapEnabled, cfg.LdapEnabled)
+		assert.Equal(t, getDefaultConfig().SmtpTls, cfg.SmtpTls)
+	})
+
+	t.Run("returns a UI-config-disabled error when the UI config is disabled", func(t *testing.T) {
+		setUIConfigDisabled(t, true)
+		svc := NewTestAppConfigService(nil)
+
+		_, err := svc.UpdateAppConfig(t.Context(), dto.AppConfigUpdateDto{AppName: "X"})
+		require.Error(t, err)
+		assert.True(t, apperror.IsCode(err, apperror.CodeUIConfigDisabled))
+	})
+}
+
+func TestService_UpdateAppConfigValues(t *testing.T) {
+	t.Run("updates a subset of keys and leaves the rest unchanged", func(t *testing.T) {
+		setUIConfigDisabled(t, false)
+		db := testutils.NewDatabaseForTest(t)
+		svc := newActorBackedService(t, db)
+
+		err := svc.UpdateAppConfigValues(t.Context(), "appName", "Updated", "sessionDuration", "120")
+		require.NoError(t, err)
+
+		cfg, err := svc.GetConfig(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, AppConfigValue("Updated"), cfg.AppName)
+		assert.Equal(t, AppConfigValue("120"), cfg.SessionDuration)
+		// A key that was not part of the update keeps its default
+		assert.Equal(t, getDefaultConfig().LdapEnabled, cfg.LdapEnabled)
+	})
+
+	t.Run("an empty value resets the property to its default", func(t *testing.T) {
+		setUIConfigDisabled(t, false)
+		db := testutils.NewDatabaseForTest(t)
+		svc := newActorBackedService(t, db)
+
+		// Set a non-default value first
+		err := svc.UpdateAppConfigValues(t.Context(), "sessionDuration", "120")
+		require.NoError(t, err)
+
+		// Then reset it with an empty value
+		err = svc.UpdateAppConfigValues(t.Context(), "sessionDuration", "")
+		require.NoError(t, err)
+
+		cfg, err := svc.GetConfig(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, getDefaultConfig().SessionDuration, cfg.SessionDuration)
+	})
+
+	t.Run("an odd number of arguments returns an error", func(t *testing.T) {
+		setUIConfigDisabled(t, false)
+		db := testutils.NewDatabaseForTest(t)
+		svc := newActorBackedService(t, db)
+
+		err := svc.UpdateAppConfigValues(t.Context(), "appName")
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "invalid number of arguments received")
+	})
+
+	t.Run("an unknown key returns an error and does not change the config", func(t *testing.T) {
+		setUIConfigDisabled(t, false)
+		db := testutils.NewDatabaseForTest(t)
+		svc := newActorBackedService(t, db)
+
+		err := svc.UpdateAppConfigValues(t.Context(), "thisKeyDoesNotExist", "value")
+		require.Error(t, err)
+
+		// The config must not have been modified
+		cfg, err := svc.GetConfig(t.Context())
+		require.NoError(t, err)
+		assert.Equal(t, *getDefaultConfig(), *cfg)
+	})
+
+	t.Run("returns a UI-config-disabled error when the UI config is disabled", func(t *testing.T) {
+		setUIConfigDisabled(t, true)
+		svc := NewTestAppConfigService(nil)
+
+		// An even number of arguments so the count check passes and we reach the UI-config check
+		err := svc.UpdateAppConfigValues(t.Context(), "appName", "X")
+		require.Error(t, err)
+		assert.True(t, apperror.IsCode(err, apperror.CodeUIConfigDisabled))
+	})
+}
+
+func TestService_ListAppConfig(t *testing.T) {
+	t.Run("returns only public variables when showAll is false", func(t *testing.T) {
+		setUIConfigDisabled(t, false)
+		db := testutils.NewDatabaseForTest(t)
+		svc := newActorBackedService(t, db)
+
+		vars, err := svc.ListAppConfig(t.Context(), false)
+		require.NoError(t, err)
+
+		// appName is public and must be present
+		_, ok := findConfigValue(vars, "appName")
+		assert.True(t, ok, "public variable appName should be present")
+		// smtpHost is not public and must be excluded
+		_, ok = findConfigValue(vars, "smtpHost")
+		assert.False(t, ok, "private variable smtpHost should be excluded")
+	})
+
+	t.Run("returns all variables when showAll is true", func(t *testing.T) {
+		setUIConfigDisabled(t, false)
+		db := testutils.NewDatabaseForTest(t)
+		svc := newActorBackedService(t, db)
+
+		vars, err := svc.ListAppConfig(t.Context(), true)
+		require.NoError(t, err)
+
+		_, ok := findConfigValue(vars, "appName")
+		assert.True(t, ok)
+		_, ok = findConfigValue(vars, "smtpHost")
+		assert.True(t, ok, "private variables should be included when showAll is true")
+	})
+
+	t.Run("reflects updates made through the service", func(t *testing.T) {
+		setUIConfigDisabled(t, false)
+		db := testutils.NewDatabaseForTest(t)
+		svc := newActorBackedService(t, db)
+
+		err := svc.UpdateAppConfigValues(t.Context(), "appName", "Listed App")
+		require.NoError(t, err)
+
+		vars, err := svc.ListAppConfig(t.Context(), true)
+		require.NoError(t, err)
+
+		got, ok := findConfigValue(vars, "appName")
+		require.True(t, ok)
+		assert.Equal(t, "Listed App", got)
+	})
+
+	t.Run("redacts sensitive values when the UI config is disabled", func(t *testing.T) {
+		setUIConfigDisabled(t, true)
+		svc := NewTestAppConfigService(&AppConfigModel{
+			SmtpPassword: "super-secret",
+		})
+
+		vars, err := svc.ListAppConfig(t.Context(), true)
+		require.NoError(t, err)
+
+		got, ok := findConfigValue(vars, "smtpPassword")
+		require.True(t, ok)
+		assert.Equal(t, "XXXXXXXXXX", got)
+	})
+}
+
+func TestService_CIMDURLAllowlist(t *testing.T) {
+	t.Run("defaults to empty", func(t *testing.T) {
+		setUIConfigDisabled(t, false)
+		db := testutils.NewDatabaseForTest(t)
+		svc := newActorBackedService(t, db)
+
+		assert.Empty(t, svc.GetCIMDURLAllowlist())
+	})
+
+	t.Run("round-trips a valid allowlist", func(t *testing.T) {
+		setUIConfigDisabled(t, false)
+		db := testutils.NewDatabaseForTest(t)
+		svc := newActorBackedService(t, db)
+
+		_, err := svc.UpdateAppConfig(t.Context(), dto.AppConfigUpdateDto{
+			AppName:          "App",
+			SessionDuration:  "60",
+			CIMDURLAllowlist: `["https://app.example.com/**","https://*.trusted.com/oauth"]`,
+		})
+		require.NoError(t, err)
+
+		assert.Equal(t,
+			[]string{"https://app.example.com/**", "https://*.trusted.com/oauth"},
+			svc.GetCIMDURLAllowlist(),
+		)
+	})
+
+	t.Run("rejects an invalid pattern", func(t *testing.T) {
+		setUIConfigDisabled(t, false)
+		db := testutils.NewDatabaseForTest(t)
+		svc := newActorBackedService(t, db)
+
+		_, err := svc.UpdateAppConfig(t.Context(), dto.AppConfigUpdateDto{
+			AppName:          "App",
+			SessionDuration:  "60",
+			CIMDURLAllowlist: `["javascript:alert(1)"]`,
+		})
+		require.Error(t, err)
+	})
+
+	t.Run("returns empty on malformed value", func(t *testing.T) {
+		setUIConfigDisabled(t, false)
+		db := testutils.NewDatabaseForTest(t)
+		svc := newActorBackedService(t, db)
+
+		require.NoError(t, svc.UpdateAppConfigValues(t.Context(), "cimdUrlAllowlist", "not-json"))
+		assert.Empty(t, svc.GetCIMDURLAllowlist())
+	})
+}
+
+func TestService_LoadDbConfigFromEnv(t *testing.T) {
+	t.Run("required verification rejects conflicting settings", func(t *testing.T) {
+		for _, setting := range []struct{ name, value string }{
+			{"EMAILS_VERIFIED", "true"},
+			{"REQUIRE_USER_EMAIL", "false"},
+			{"SMTP_HOST", ""},
+			{"SMTP_FROM", ""},
+		} {
+			t.Run(setting.name, func(t *testing.T) {
+				t.Setenv("EMAIL_VERIFICATION", "required")
+				t.Setenv("EMAILS_VERIFIED", "false")
+				t.Setenv("REQUIRE_USER_EMAIL", "true")
+				t.Setenv("SMTP_HOST", "smtp.example.com")
+				t.Setenv("SMTP_FROM", "pocket-id@example.com")
+				t.Setenv(setting.name, setting.value)
+
+				_, err := (&AppConfigService{}).loadDbConfigFromEnv()
+				require.ErrorContains(t, err, "EMAIL_VERIFICATION requires user emails, an SMTP host and sender address, and forbids emails verified by default")
+			})
+		}
+	})
+
+	t.Run("required verification accepts consistent settings", func(t *testing.T) {
+		t.Setenv("EMAIL_VERIFICATION", "required")
+		t.Setenv("SMTP_HOST", "smtp.example.com")
+		t.Setenv("SMTP_FROM", "pocket-id@example.com")
+
+		cfg, err := (&AppConfigService{}).loadDbConfigFromEnv()
+		require.NoError(t, err)
+		assert.Equal(t, AppConfigValue(EmailVerificationRequired), cfg.EmailVerification)
+	})
+
+	// writeSecretFile writes content to a file in a temporary directory that is removed when the test ends, returning its path
+	writeSecretFile := func(t *testing.T, content string) string {
+		t.Helper()
+
+		fileName := filepath.Join(t.TempDir(), "secret.txt")
+		err := os.WriteFile(fileName, []byte(content), 0600)
+		require.NoError(t, err)
+
+		return fileName
+	}
+
+	t.Run("loads a sensitive value from a file", func(t *testing.T) {
+		t.Setenv("LDAP_BIND_PASSWORD_FILE", writeSecretFile(t, "my-ldap-password"))
+
+		svc := &AppConfigService{}
+		cfg, err := svc.loadDbConfigFromEnv()
+		require.NoError(t, err)
+
+		assert.Equal(t, AppConfigValue("my-ldap-password"), cfg.LdapBindPassword)
+	})
+
+	t.Run("trims whitespace from values loaded from a file", func(t *testing.T) {
+		// Files containing secrets normally end with a trailing newline, which must not be part of the value
+		t.Setenv("LDAP_BIND_PASSWORD_FILE", writeSecretFile(t, "my-ldap-password\n"))
+		t.Setenv("SMTP_PASSWORD_FILE", writeSecretFile(t, "  my-smtp-password  \r\n"))
+
+		svc := &AppConfigService{}
+		cfg, err := svc.loadDbConfigFromEnv()
+		require.NoError(t, err)
+
+		assert.Equal(t, AppConfigValue("my-ldap-password"), cfg.LdapBindPassword)
+		assert.Equal(t, AppConfigValue("my-smtp-password"), cfg.SmtpPassword)
+	})
+
+	t.Run("the file takes precedence over the environment variable", func(t *testing.T) {
+		t.Setenv("LDAP_BIND_PASSWORD", "from-env")
+		t.Setenv("LDAP_BIND_PASSWORD_FILE", writeSecretFile(t, "from-file\n"))
+
+		svc := &AppConfigService{}
+		cfg, err := svc.loadDbConfigFromEnv()
+		require.NoError(t, err)
+
+		assert.Equal(t, AppConfigValue("from-file"), cfg.LdapBindPassword)
+	})
+
+	t.Run("values that are not sensitive are not loaded from a file", func(t *testing.T) {
+		t.Setenv("LDAP_BIND_DN_FILE", writeSecretFile(t, "cn=from-file"))
+
+		svc := &AppConfigService{}
+		cfg, err := svc.loadDbConfigFromEnv()
+		require.NoError(t, err)
+
+		assert.Empty(t, cfg.LdapBindDn)
+	})
+
+	t.Run("returns an error when the file cannot be read", func(t *testing.T) {
+		t.Setenv("LDAP_BIND_PASSWORD_FILE", filepath.Join(t.TempDir(), "does-not-exist.txt"))
+
+		svc := &AppConfigService{}
+		_, err := svc.loadDbConfigFromEnv()
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "LDAP_BIND_PASSWORD_FILE")
+	})
+}

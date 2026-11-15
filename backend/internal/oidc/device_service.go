@@ -1,0 +1,316 @@
+package oidc
+
+import (
+	"context"
+	"errors"
+	"net/http"
+	"slices"
+	"strings"
+	"time"
+
+	"github.com/pocket-id/fosite"
+	"github.com/pocket-id/fosite/handler/rfc8628"
+	"gorm.io/gorm"
+
+	"github.com/pocket-id/pocket-id/backend/internal/apperror"
+	"github.com/pocket-id/pocket-id/backend/internal/auditlogs"
+	"github.com/pocket-id/pocket-id/backend/internal/dto"
+	"github.com/pocket-id/pocket-id/backend/internal/model"
+	"github.com/pocket-id/pocket-id/backend/internal/utils"
+)
+
+type deviceService struct {
+	provider             fosite.OAuth2Provider
+	store                *Store
+	userCodeStrategy     rfc8628.UserCodeStrategy
+	authorizationService *authorizationService
+	claimsService        *ClaimsService
+	auditLog             AuditLogger
+	db                   *gorm.DB
+}
+
+func newDeviceService(
+	provider fosite.OAuth2Provider,
+	store *Store,
+	userCodeStrategy rfc8628.UserCodeStrategy,
+	authorizationService *authorizationService,
+	claimsService *ClaimsService,
+	auditLog AuditLogger,
+	db *gorm.DB,
+) *deviceService {
+	return &deviceService{
+		provider:             provider,
+		store:                store,
+		userCodeStrategy:     userCodeStrategy,
+		authorizationService: authorizationService,
+		claimsService:        claimsService,
+		auditLog:             auditLog,
+		db:                   db,
+	}
+}
+
+func (s *deviceService) createDeviceAuthorization(ctx context.Context, req *http.Request) (*dto.OidcDeviceAuthorizationResponseDto, fosite.Requester, error) {
+	request, err := s.provider.NewDeviceRequest(ctx, req)
+	if err != nil {
+		return nil, request, err
+	}
+
+	// Validate the requested scopes and resolve the resource indicator to an audience and the subset of requested scopes that may be granted
+	client := request.GetClient().(Client)
+	resource, err := request.GetResource()
+	if err != nil {
+		return nil, request, err
+	}
+	audience, grantedScopes, _, err := s.authorizationService.resolveGrant(ctx, client.GetID(), resource, request.GetRequestedScopes())
+	if err != nil {
+		if resource != "" && errors.Is(err, fosite.ErrAccessDenied) {
+			return nil, request, fosite.ErrInvalidTarget.WithHintf("The requested resource '%s' is invalid, missing, unknown, or malformed.", resource)
+		}
+		return nil, request, err
+	}
+	grantResourceIndicator(request, audience, grantedScopes)
+
+	session := NewEmptySession()
+	response, err := s.provider.NewDeviceResponse(ctx, request, session)
+	if err != nil {
+		return nil, request, err
+	}
+
+	return &dto.OidcDeviceAuthorizationResponseDto{
+		DeviceCode:              response.GetDeviceCode(),
+		UserCode:                response.GetUserCode(),
+		VerificationURI:         response.GetVerificationURI(),
+		VerificationURIComplete: response.GetVerificationURIComplete(),
+		ExpiresIn:               int(response.GetExpiresIn()),
+		Interval:                response.GetInterval(),
+	}, request, nil
+}
+
+func (s *deviceService) acceptDeviceCode(ctx context.Context, userCode, userID, authenticationMethod string, authenticationTime time.Time, approvedScopes []string, reauthenticationToken string, meta requestMeta) error {
+	request, userCodeSignature, err := s.deviceRequestFromUserCode(ctx, userCode)
+	if err != nil {
+		return err
+	}
+
+	// A user code may be approved only once. Rejecting an already-approved code prevents a second
+	// logged-in user from rebinding a pending device authorization to themselves before the device
+	// polls for its token.
+	if request.GetUserCodeState() != fosite.UserCodeUnused {
+		return apperror.OidcInvalidDeviceCode()
+	}
+
+	client := request.GetClient().(Client)
+	user, err := s.loadDeviceAuthorizationUser(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if !IsUserGroupAllowedToAuthorize(user, client.OidcClient) {
+		return fosite.ErrAccessDenied.WithHint("You are not allowed to access this service.")
+	}
+
+	// Narrow the request to the scopes the user approved before resolving the grant, so deselected scopes are neither consented to nor granted
+	if err := narrowDeviceRequestScopes(request, approvedScopes); err != nil {
+		return err
+	}
+
+	resource, err := request.GetResource()
+	if err != nil {
+		return err
+	}
+	audience, grantedScopes, consentKeys, err := s.authorizationService.resolveGrant(ctx, client.GetID(), resource, request.GetRequestedScopes())
+	if err != nil {
+		return err
+	}
+	grantResourceIndicator(request, audience, grantedScopes)
+
+	return withTx(ctx, s.db, func(ctx context.Context) error {
+		if client.RequiresReauthentication {
+			if reauthenticationToken == "" || s.authorizationService == nil || s.authorizationService.reauth == nil {
+				return apperror.ReauthenticationRequired()
+			}
+
+			reauthenticatedAt, err := s.authorizationService.reauth.ConsumeReauthenticationToken(ctx, dbFromContext(ctx, s.db), reauthenticationToken, userID)
+			if err != nil {
+				return err
+			}
+			authenticationTime = reauthenticatedAt
+		}
+		if authenticationTime.IsZero() {
+			authenticationTime = time.Now().UTC()
+		}
+
+		session := NewAuthenticatedSession(userID, authenticationMethod, authenticationTime, request.GetRequestedAt())
+
+		// Keep the lifetimes of the pending device authorization, so its codes and the OpenID Connect session created below still expire
+		copyDeviceCodeExpiry(request.GetSession(), session)
+
+		if err = s.claimsService.applyIDTokenClaims(ctx, session, request.GetGrantedScopes()); err != nil {
+			return err
+		}
+		request.SetSession(session)
+
+		hasAlreadyAuthorizedClient, err := s.authorizationService.consent(ctx, userID, client.GetID(), consentKeys)
+		if err != nil {
+			return err
+		}
+
+		event := auditlogs.EventDeviceCodeAuthorization
+		if !hasAlreadyAuthorizedClient {
+			event = auditlogs.EventNewDeviceCodeAuthorization
+		}
+		s.auditLog.Create(ctx, event, meta.IPAddress, meta.UserAgent, userID, auditlogs.Data{"clientName": client.Name}, dbFromContext(ctx, s.db))
+
+		deviceCodeSignature, err := s.store.AcceptDeviceCodeSessionByUserCodeSignature(ctx, userCodeSignature, request)
+		if err != nil {
+			return err
+		}
+
+		if request.GetGrantedScopes().Has("openid") {
+			if err := s.store.CreateOpenIDConnectSession(ctx, deviceCodeSignature, request); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
+
+// narrowDeviceRequestScopes restricts a pending device authorization to the scopes the user approved on the consent screen
+// The device authorization endpoint already granted every allowed scope, so the grants of deselected scopes are dropped as well
+func narrowDeviceRequestScopes(request fosite.DeviceRequester, approvedScopes []string) error {
+	if approvedScopes == nil {
+		return nil
+	}
+
+	narrowed, err := narrowApprovedScopes(request.GetRequestedScopes(), approvedScopes)
+	if err != nil {
+		return err
+	}
+
+	// The requester interface can only add grants, so the stored device request is changed directly
+	deviceRequest, ok := request.(*fosite.DeviceRequest)
+	if !ok {
+		return errors.New("unexpected device request type")
+	}
+	deviceRequest.SetRequestedScopes(narrowed)
+	deviceRequest.GrantedScope = slices.DeleteFunc(deviceRequest.GrantedScope, func(scope string) bool {
+		return !slices.Contains(narrowed, scope)
+	})
+
+	return nil
+}
+
+// copyDeviceCodeExpiry copies the device and user code expiry from the pending device authorization's session to the session that replaces it
+func copyDeviceCodeExpiry(from fosite.Session, to *Session) {
+	if from == nil {
+		return
+	}
+	for _, tokenType := range []fosite.TokenType{fosite.DeviceCode, fosite.UserCode} {
+		if expiresAt := from.GetExpiresAt(tokenType); !expiresAt.IsZero() {
+			to.SetExpiresAt(tokenType, expiresAt)
+		}
+	}
+}
+
+func (s *deviceService) loadDeviceAuthorizationUser(ctx context.Context, userID string) (model.User, error) {
+	tx := s.db.Begin()
+	defer func() {
+		tx.Rollback()
+	}()
+
+	var user model.User
+	err := tx.
+		WithContext(ctx).
+		Preload("UserGroups").
+		First(&user, "id = ?", userID).
+		Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return model.User{}, apperror.UserNotFound()
+	}
+
+	return user, err
+}
+
+func (s *deviceService) getDeviceCodeInfo(ctx context.Context, userCode, userID string) (*dto.DeviceCodeInfoDto, error) {
+	request, _, err := s.deviceRequestFromUserCode(ctx, userCode)
+	if err != nil {
+		return nil, err
+	}
+
+	client := request.GetClient().(Client)
+	resource, err := request.GetResource()
+	if err != nil {
+		return nil, err
+	}
+	authorizationRequired := true
+	if userID != "" {
+		_, _, consentKeys, err := s.authorizationService.resolveGrant(ctx, client.GetID(), resource, request.GetRequestedScopes())
+		if err != nil {
+			return nil, err
+		}
+		hasAuthorizedClient, err := s.authorizationService.hasAuthorizedClient(ctx, client.GetID(), userID, consentKeys)
+		if err != nil {
+			return nil, err
+		}
+		// The device flow has no per-request prompt parameter, so consent depends only on prior authorization and the client's skip-consent setting
+		authorizationRequired = consentRequired(hasAuthorizedClient, client.SkipConsent, nil)
+	}
+
+	scope := request.GetRequestedScopes()
+	if scope == nil {
+		scope = []string{}
+	}
+
+	// Resolve friendly names for the requested custom-API permissions so the device consent screen matches the browser flow
+	scopeInfo, err := s.authorizationService.resolveScopeInfoForRequest(ctx, resource, scope)
+	if err != nil {
+		return nil, err
+	}
+	// Always serialize a possibly empty array rather than null
+	if scopeInfo == nil {
+		scopeInfo = []dto.ScopeInfoDto{}
+	}
+
+	return &dto.DeviceCodeInfoDto{
+		Client: dto.OidcClientMetaDataDto{
+			ID:                       client.ID,
+			Name:                     client.Name,
+			HasLogo:                  client.HasLogo(),
+			HasDarkLogo:              client.HasDarkLogo(),
+			LaunchURL:                client.LaunchURL,
+			RequiresReauthentication: client.RequiresReauthentication,
+			ClientType:               string(client.ClientType),
+		},
+		Scope:                    scope,
+		ScopeInfo:                scopeInfo,
+		AuthorizationRequired:    authorizationRequired,
+		ReauthenticationRequired: client.RequiresReauthentication,
+	}, nil
+}
+
+func (s *deviceService) deviceRequestFromUserCode(ctx context.Context, userCode string) (fosite.DeviceRequester, string, error) {
+	userCode = strings.ToUpper(strings.TrimSpace(userCode))
+	userCode = utils.NormalizeUnambiguousString(userCode)
+
+	userCodeSignature, err := s.userCodeStrategy.UserCodeSignature(ctx, userCode)
+	if err != nil {
+		return nil, "", err
+	}
+
+	request, err := s.store.GetDeviceCodeSessionByUserCodeSignature(ctx, userCodeSignature)
+	if errors.Is(err, fosite.ErrNotFound) {
+		return nil, "", apperror.OidcInvalidDeviceCode()
+	}
+	if err != nil {
+		return nil, "", err
+	}
+
+	if err = s.userCodeStrategy.ValidateUserCode(ctx, request, userCode); err != nil {
+		if errors.Is(err, fosite.ErrDeviceExpiredToken) {
+			return nil, "", apperror.OidcDeviceCodeExpired()
+		}
+		return nil, "", err
+	}
+
+	return request, userCodeSignature, nil
+}

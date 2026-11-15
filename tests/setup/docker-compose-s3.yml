@@ -1,0 +1,45 @@
+services:
+  lldap:
+    extends:
+      file: docker-compose.yml
+      service: lldap
+  scim-test-server:
+    extends:
+      file: docker-compose.yml
+      service: scim-test-server
+  localstack-s3:
+    image: localstack/localstack:4.14.0
+    environment:
+      SERVICES: s3
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: us-east-1
+    volumes:
+      - ./localstack-init-s3.py:/etc/localstack/init/ready.d/10-init-s3.py
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'curl -fs http://localstack-s3:4566/_localstack/init/ready | grep -q ''"completed": true'''
+        ]
+      interval: 1s
+      timeout: 3s
+      retries: 10
+  pocket-id:
+    extends:
+      file: docker-compose.yml
+      service: pocket-id
+    environment:
+      FILE_BACKEND: s3
+      S3_BUCKET: pocket-id-test
+      S3_REGION: us-east-1
+      S3_ENDPOINT: http://localstack-s3:4566
+      S3_ACCESS_KEY_ID: test
+      S3_SECRET_ACCESS_KEY: test
+      S3_FORCE_PATH_STYLE: true
+    depends_on:
+      localstack-s3:
+        condition: service_healthy
+
+volumes:
+  pocket-id-test-data:

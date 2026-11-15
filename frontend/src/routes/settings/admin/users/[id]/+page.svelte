@@ -1,0 +1,183 @@
+<script lang="ts">
+	import ActionsMenu from '#lib/components/actions-menu.svelte';
+	import CustomClaimsInput from '#lib/components/form/custom-claims-input.svelte';
+	import ProfilePictureSettings from '#lib/components/form/profile-picture-settings.svelte';
+	import OneTimeLinkModal from '#lib/components/one-time-link-modal.svelte';
+	import Badge from '#lib/components/ui/badge/badge.svelte';
+	import * as Card from '#lib/components/ui/card/index.ts';
+	import * as Item from '#lib/components/ui/item/index.js';
+	import * as Tabs from '#lib/components/ui/tabs/index.ts';
+	import UserGroupSelection from '#lib/components/user-group-selection.svelte';
+	import { m } from '#lib/paraglide/messages.js';
+	import CustomClaimService from '#lib/services/custom-claim-service.ts';
+	import UserService from '#lib/services/user-service.ts';
+	import appConfigStore from '#lib/stores/application-configuration-store.ts';
+	import type { Passkey } from '#lib/types/passkey.type.ts';
+	import type { UserCreate } from '#lib/types/user.type.ts';
+	import { axiosErrorToast } from '#lib/utils/error-util.ts';
+	import { trackUnsavedValue } from '#lib/utils/unsaved-changes-util.svelte.ts';
+	import { KeyRound, LucideChevronLeft } from '@lucide/svelte';
+	import { toast } from 'svelte-sonner';
+	import { backNavigate } from '../navigate-back-util';
+	import { deleteUserAction, loginCodeAction } from '../user-actions';
+	import UserForm from '../user-form.svelte';
+	import AdminPasskeyList from './admin-passkey-list.svelte';
+
+	let { data } = $props();
+	let user = $state({
+		...data.user,
+		userGroupIds: data.user.userGroups.map((g) => g.id)
+	});
+	let passkeys: Passkey[] = $state(data.passkeys);
+	let userIdToCreateOneTimeLink: string | null = $state(null);
+
+	const userService = new UserService();
+	const customClaimService = new CustomClaimService();
+	const backNavigation = backNavigate('/settings/admin/users');
+
+	const actions = $derived([
+		loginCodeAction((u) => (userIdToCreateOneTimeLink = u.id)),
+		deleteUserAction(user, backNavigation.leave)
+	]);
+
+	async function updateUser(updatedUser: UserCreate) {
+		await userService.update(user.id, updatedUser);
+		// Whether the user can be deleted depends on the saved disabled state
+		user.disabled = updatedUser.disabled;
+	}
+
+	trackUnsavedValue(
+		() => user.userGroupIds,
+		(userGroupIds) => {
+			user.userGroupIds = userGroupIds;
+		},
+		(userGroupIds) => userService.updateUserGroups(user.id, userGroupIds)
+	);
+
+	trackUnsavedValue(
+		() => user.customClaims,
+		(customClaims) => {
+			user.customClaims = customClaims;
+		},
+		(customClaims) => customClaimService.updateUserCustomClaims(user.id, customClaims)
+	);
+
+	async function updateProfilePicture(image: File) {
+		await userService
+			.updateProfilePicture(user.id, image)
+			.then(() => toast.success(m.profile_picture_updated_successfully()))
+			.catch(axiosErrorToast);
+	}
+
+	async function resetProfilePicture() {
+		await userService
+			.resetProfilePicture(user.id)
+			.then(() => toast.success(m.profile_picture_has_been_reset()))
+			.catch(axiosErrorToast);
+	}
+</script>
+
+<svelte:head>
+	<title
+		>{m.user_details_firstname_lastname({
+			firstName: user.firstName,
+			lastName: user.lastName ?? ''
+		})}</title
+	>
+</svelte:head>
+
+<div class="flex items-center justify-between">
+	<button class="text-muted-foreground flex text-sm" onclick={() => backNavigation.go()}
+		><LucideChevronLeft class="size-5" /> {m.back()}</button
+	>
+	<div class="flex items-center gap-2">
+		{#if !!user.ldapId}
+			<Badge class="rounded-full" variant="default">{m.ldap()}</Badge>
+		{/if}
+		<ActionsMenu item={user} {actions} label={m.actions()} variant="outline" size="icon-sm" />
+	</div>
+</div>
+<Tabs.Root value="general" useHash class="gap-4">
+	<div class="overflow-x-auto pb-1">
+		<Tabs.List variant="line" class="min-w-max">
+			<Tabs.Trigger value="general">{m.general()}</Tabs.Trigger>
+			<Tabs.Trigger value="groups">{m.user_groups()}</Tabs.Trigger>
+			<Tabs.Trigger value="passkeys">{m.passkeys()}</Tabs.Trigger>
+			<Tabs.Trigger value="custom-claims">{m.custom_claims()}</Tabs.Trigger>
+		</Tabs.List>
+	</div>
+
+	<Tabs.Content value="general" class="flex flex-col gap-4">
+		<Card.Root>
+			<Card.Header>
+				<Card.Title>{m.general()}</Card.Title>
+			</Card.Header>
+			<Card.Content>
+				<UserForm existingUser={user} callback={updateUser} />
+			</Card.Content>
+		</Card.Root>
+
+		<Card.Root>
+			<Card.Content>
+				<ProfilePictureSettings
+					userId={user.id}
+					isLdapUser={!!user.ldapId}
+					updateCallback={updateProfilePicture}
+					resetCallback={resetProfilePicture}
+				/>
+			</Card.Content>
+		</Card.Root>
+	</Tabs.Content>
+
+	<Tabs.Content value="groups" id="user-groups">
+		<Card.Root>
+			<Card.Header>
+				<Card.Title>{m.user_groups()}</Card.Title>
+				<Card.Description>{m.manage_which_groups_this_user_belongs_to()}</Card.Description>
+			</Card.Header>
+			<Card.Content>
+				<UserGroupSelection
+					bind:selectedGroupIds={user.userGroupIds}
+					selectionDisabled={!!user.ldapId && $appConfigStore.ldapEnabled}
+				/>
+			</Card.Content>
+		</Card.Root>
+	</Tabs.Content>
+
+	<Tabs.Content value="passkeys">
+		<Item.Group class="bg-card rounded-4xl border p-5 shadow-sm">
+			<Item.Root class="border-none bg-transparent p-0">
+				<Item.Media class="text-primary/80">
+					<KeyRound class="size-5" />
+				</Item.Media>
+				<Item.Content class="min-w-52">
+					<Item.Title class="text-xl font-semibold">{m.passkeys()}</Item.Title>
+					<Item.Description
+						>{passkeys.length > 0
+							? m.manage_this_users_passkeys()
+							: m.user_has_no_passkeys_yet()}</Item.Description
+					>
+				</Item.Content>
+			</Item.Root>
+			{#if passkeys.length > 0}
+				<AdminPasskeyList userId={user.id} bind:passkeys />
+			{/if}
+		</Item.Group>
+	</Tabs.Content>
+
+	<Tabs.Content value="custom-claims" id="user-custom-claims">
+		<Card.Root>
+			<Card.Header>
+				<Card.Title>{m.custom_claims()}</Card.Title>
+				<Card.Description>
+					{m.custom_claims_are_key_value_pairs_that_can_be_used_to_store_additional_information_about_a_user()}
+				</Card.Description>
+			</Card.Header>
+			<Card.Content>
+				<CustomClaimsInput bind:customClaims={user.customClaims} />
+			</Card.Content>
+		</Card.Root>
+	</Tabs.Content>
+</Tabs.Root>
+
+<OneTimeLinkModal bind:userId={userIdToCreateOneTimeLink} />

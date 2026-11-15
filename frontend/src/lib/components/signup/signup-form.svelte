@@ -1,0 +1,53 @@
+<script lang="ts">
+	import FormInput from '#lib/components/form/form-input.svelte';
+	import { m } from '#lib/paraglide/messages.js';
+	import appConfigStore from '#lib/stores/application-configuration-store.ts';
+	import type { UserSignUp } from '#lib/types/user.type.ts';
+	import { preventDefault } from '#lib/utils/event-util.ts';
+	import { createForm } from '#lib/utils/form-util.ts';
+	import { emptyToUndefined, usernameSchema } from '#lib/utils/zod-util.ts';
+	import { get } from 'svelte/store';
+	import { z } from 'zod/v4';
+
+	let {
+		callback
+	}: {
+		callback: (user: UserSignUp) => Promise<boolean>;
+	} = $props();
+
+	const initialData: UserSignUp = {
+		firstName: '',
+		lastName: '',
+		email: '',
+		username: ''
+	};
+
+	const formSchema = z.object({
+		firstName: z.string().max(50),
+		lastName: emptyToUndefined(z.string().max(50).optional()),
+		username: usernameSchema,
+		email: get(appConfigStore).requireUserEmail ? z.email() : emptyToUndefined(z.email().optional())
+	});
+	type FormSchema = typeof formSchema;
+
+	const { inputs, ...form } = createForm<FormSchema>(formSchema, initialData);
+
+	async function onSubmit() {
+		const data = form.validate();
+		if (!data) return;
+
+		await callback(data);
+	}
+</script>
+
+<form id="sign-up-form" onsubmit={preventDefault(onSubmit)} class="w-full">
+	<div class="mt-7 space-y-4">
+		<FormInput label={m.username()} bind:input={$inputs.username} />
+		<FormInput label={m.email()} bind:input={$inputs.email} type="email" />
+
+		<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+			<FormInput label={m.first_name()} bind:input={$inputs.firstName} />
+			<FormInput label={m.last_name()} bind:input={$inputs.lastName} />
+		</div>
+	</div>
+</form>

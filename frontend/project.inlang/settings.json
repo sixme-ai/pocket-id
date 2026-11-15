@@ -1,0 +1,39 @@
+{
+	"$schema": "https://inlang.com/schema/project-settings",
+	"baseLocale": "en",
+	"locales": [
+		"ca",
+		"cs",
+		"da",
+		"de",
+		"en",
+		"es",
+		"et",
+		"fi",
+		"fr",
+		"hu",
+		"it",
+		"ja",
+		"ko",
+		"lv",
+		"nl",
+		"no",
+		"pl",
+		"pt",
+		"pt-BR",
+		"ru",
+		"sv",
+		"tr",
+		"uk",
+		"vi",
+		"zh-CN",
+		"zh-TW"
+	],
+	"modules": [
+		"./node_modules/@inlang/plugin-message-format/dist/index.js",
+		"./node_modules/@inlang/plugin-m-function-matcher/dist/index.js"
+	],
+	"plugin.inlang.messageFormat": {
+		"pathPattern": "./messages/{locale}.json"
+	}
+}

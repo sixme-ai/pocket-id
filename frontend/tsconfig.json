@@ -1,0 +1,9 @@
+{
+	"extends": "$app/tsconfig",
+	"compilerOptions": {
+		"strict": true,
+		"sourceMap": true
+	},
+	"include": ["src", "*.js", "*.ts"],
+	"exclude": ["src/service-worker", "src/lib/paraglide"]
+}

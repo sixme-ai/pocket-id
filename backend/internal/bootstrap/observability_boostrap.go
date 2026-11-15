@@ -1,0 +1,214 @@
+package bootstrap
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"net/http"
+	"os"
+	"time"
+
+	sloggin "github.com/gin-contrib/slog"
+	"github.com/italypaleale/go-kit/servicerunner"
+	"github.com/lmittmann/tint"
+	"github.com/mattn/go-isatty"
+	"go.opentelemetry.io/contrib/bridges/otelslog"
+	"go.opentelemetry.io/contrib/exporters/autoexport"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	sdklog "go.opentelemetry.io/otel/sdk/log"
+	"go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.30.0"
+
+	"github.com/pocket-id/pocket-id/backend/internal/common"
+)
+
+func defaultResource() (*resource.Resource, error) {
+	return resource.Merge(
+		resource.Default(),
+		resource.NewSchemaless(
+			semconv.ServiceName(common.Name),
+			semconv.ServiceVersion(common.Version),
+		),
+	)
+}
+
+func initObservability(ctx context.Context) (shutdownFns []servicerunner.Service, httpClient *http.Client, err error) {
+	resource, err := defaultResource()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create OpenTelemetry resource: %w", err)
+	}
+
+	shutdownFns = make([]servicerunner.Service, 0, 3)
+
+	httpClient = &http.Client{}
+	defaultTransport, ok := http.DefaultTransport.(*http.Transport)
+	if !ok {
+		// Indicates a development-time error
+		panic("Default transport is not of type *http.Transport")
+	}
+	httpClient.Transport = defaultTransport.Clone()
+
+	// Logging
+	loggingShutdownFn, err := initOtelLogging(ctx, resource)
+	if err != nil {
+		return nil, nil, err
+	} else if loggingShutdownFn != nil {
+		shutdownFns = append(shutdownFns, loggingShutdownFn)
+	}
+
+	// Tracing
+	tracingShutdownFn, err := initOtelTracing(ctx, resource, httpClient)
+	if err != nil {
+		return nil, nil, err
+	} else if tracingShutdownFn != nil {
+		shutdownFns = append(shutdownFns, tracingShutdownFn)
+	}
+
+	// Metrics
+	metricsShutdownFn, err := initOtelMetrics(ctx, resource)
+	if err != nil {
+		return nil, nil, err
+	} else if metricsShutdownFn != nil {
+		shutdownFns = append(shutdownFns, metricsShutdownFn)
+	}
+
+	return shutdownFns, httpClient, nil
+}
+
+func initOtelLogging(ctx context.Context, resource *resource.Resource) (shutdownFn servicerunner.Service, err error) {
+	// If the env var OTEL_LOGS_EXPORTER is empty, we set it to "none", for autoexport to work
+	if os.Getenv("OTEL_LOGS_EXPORTER") == "" {
+		os.Setenv("OTEL_LOGS_EXPORTER", "none")
+	}
+	exp, err := autoexport.NewLogExporter(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize OpenTelemetry log exporter: %w", err)
+	}
+
+	level, _ := sloggin.ParseLevel(common.EnvConfig.LogLevel)
+
+	// Create the console handler
+	var handler slog.Handler
+	if common.EnvConfig.LogJSON {
+		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level: level,
+		})
+	} else {
+		handler = tint.NewTextHandler(os.Stdout, &tint.Options{
+			TimeFormat: time.Stamp,
+			Level:      level,
+			NoColor:    !isatty.IsTerminal(os.Stdout.Fd()),
+		})
+	}
+
+	// When log export is enabled, also send logs to OpenTelemetry through a batch processor.
+	// When it's disabled (the exporter is a no-op), we skip the OTel handler entirely so we don't convert and buffer every log record just to drop it.
+	if !autoexport.IsNoneLogExporter(exp) {
+		// Create the logger provider
+		provider := sdklog.NewLoggerProvider(
+			sdklog.WithProcessor(
+				sdklog.NewBatchProcessor(exp),
+			),
+			sdklog.WithResource(resource),
+		)
+
+		// Set the logger provider globally
+		otel.SetLoggerProvider(provider)
+
+		handler = slog.NewMultiHandler(
+			handler,
+			otelslog.NewHandler(common.Name, otelslog.WithLoggerProvider(provider)),
+		)
+
+		shutdownFn = func(shutdownCtx context.Context) error { //nolint:contextcheck
+			lpCtx, lpCancel := context.WithTimeout(shutdownCtx, 10*time.Second)
+			defer lpCancel()
+			shutdownErr := provider.Shutdown(lpCtx)
+			if shutdownErr != nil {
+				return fmt.Errorf("failed to gracefully shut down logs exporter: %w", shutdownErr)
+			}
+			return nil
+		}
+	}
+
+	// Set the default slog to send logs to OTel and add the app name
+	log := slog.New(handler).
+		With(slog.String("app", common.Name)).
+		With(slog.String("version", common.Version))
+	slog.SetDefault(log)
+
+	return shutdownFn, nil
+}
+
+func initOtelTracing(ctx context.Context, resource *resource.Resource, httpClient *http.Client) (shutdownFn servicerunner.Service, err error) {
+	// If the env var OTEL_TRACES_EXPORTER is empty, we set it to "none"
+	if os.Getenv("OTEL_TRACES_EXPORTER") == "" {
+		os.Setenv("OTEL_TRACES_EXPORTER", "none")
+	}
+
+	tr, err := autoexport.NewSpanExporter(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize OpenTelemetry span exporter: %w", err)
+	}
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithResource(resource),
+		sdktrace.WithBatcher(tr),
+	)
+
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(
+		propagation.NewCompositeTextMapPropagator(
+			propagation.TraceContext{},
+			propagation.Baggage{},
+		),
+	)
+
+	shutdownFn = func(shutdownCtx context.Context) error { //nolint:contextcheck
+		tpCtx, tpCancel := context.WithTimeout(shutdownCtx, 10*time.Second)
+		defer tpCancel()
+		shutdownErr := tp.Shutdown(tpCtx)
+		if shutdownErr != nil {
+			return fmt.Errorf("failed to gracefully shut down traces exporter: %w", shutdownErr)
+		}
+		return nil
+	}
+
+	// Add tracing to the HTTP client
+	httpClient.Transport = otelhttp.NewTransport(httpClient.Transport)
+
+	return shutdownFn, nil
+}
+
+func initOtelMetrics(ctx context.Context, resource *resource.Resource) (shutdownFn servicerunner.Service, err error) {
+	// If the env var OTEL_METRICS_EXPORTER is empty, we set it to "none"
+	if os.Getenv("OTEL_METRICS_EXPORTER") == "" {
+		os.Setenv("OTEL_METRICS_EXPORTER", "none")
+	}
+
+	mr, err := autoexport.NewMetricReader(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize OpenTelemetry metric reader: %w", err)
+	}
+
+	mp := metric.NewMeterProvider(
+		metric.WithResource(resource),
+		metric.WithReader(mr),
+	)
+	otel.SetMeterProvider(mp)
+
+	shutdownFn = func(shutdownCtx context.Context) error { //nolint:contextcheck
+		mpCtx, mpCancel := context.WithTimeout(shutdownCtx, 10*time.Second)
+		defer mpCancel()
+		shutdownErr := mp.Shutdown(mpCtx)
+		if shutdownErr != nil {
+			return fmt.Errorf("failed to gracefully shut down metrics exporter: %w", shutdownErr)
+		}
+		return nil
+	}
+
+	return shutdownFn, nil
+}

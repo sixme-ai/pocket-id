@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "golang.go",
+    "svelte.svelte-vscode",
+    "bradlc.vscode-tailwindcss",
+    "oxc.oxc-vscode",
+    "VoidZero.vite-plus-extension-pack"
+  ]
+}

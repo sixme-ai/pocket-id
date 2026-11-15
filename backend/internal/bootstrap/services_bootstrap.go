@@ -1,0 +1,305 @@
+package bootstrap
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+
+	francishost "github.com/italypaleale/francis/host"
+	"gorm.io/gorm"
+
+	"github.com/pocket-id/pocket-id/backend/internal/api"
+	"github.com/pocket-id/pocket-id/backend/internal/apikey"
+	"github.com/pocket-id/pocket-id/backend/internal/appconfig"
+	"github.com/pocket-id/pocket-id/backend/internal/auditlogs"
+	"github.com/pocket-id/pocket-id/backend/internal/backchannellogout"
+	"github.com/pocket-id/pocket-id/backend/internal/common"
+	"github.com/pocket-id/pocket-id/backend/internal/devicelogin"
+	"github.com/pocket-id/pocket-id/backend/internal/email"
+	"github.com/pocket-id/pocket-id/backend/internal/emailverification"
+	"github.com/pocket-id/pocket-id/backend/internal/environment"
+	"github.com/pocket-id/pocket-id/backend/internal/geolite"
+	"github.com/pocket-id/pocket-id/backend/internal/iplocation"
+	"github.com/pocket-id/pocket-id/backend/internal/ldapsync"
+	"github.com/pocket-id/pocket-id/backend/internal/logopreset"
+	"github.com/pocket-id/pocket-id/backend/internal/oidc"
+	"github.com/pocket-id/pocket-id/backend/internal/onetimeaccess"
+	"github.com/pocket-id/pocket-id/backend/internal/outbound"
+	"github.com/pocket-id/pocket-id/backend/internal/scimsync"
+	"github.com/pocket-id/pocket-id/backend/internal/service"
+	"github.com/pocket-id/pocket-id/backend/internal/storage"
+	"github.com/pocket-id/pocket-id/backend/internal/usersignup"
+	"github.com/pocket-id/pocket-id/backend/internal/webauthn"
+)
+
+type services struct {
+	appConfigService   *appconfig.AppConfigService
+	appImagesService   *service.AppImagesService
+	emailModule        *email.Module
+	geoLiteModule      *geolite.Module
+	ipLocator          iplocation.Resolver
+	jwtService         *service.JwtService
+	userService        *service.UserService
+	customClaimService *service.CustomClaimService
+	oidcService        *service.OidcService
+	userGroupService   *service.UserGroupService
+	fileStorage        storage.FileStorage
+
+	apiKeyModule            *apikey.Module
+	auditLogsModule         *auditlogs.Module
+	deviceLoginModule       *devicelogin.Module
+	ldapSyncModule          *ldapsync.Module
+	scimSyncModule          *scimsync.Module
+	oidcModule              *oidc.Module
+	webauthnModule          *webauthn.Module
+	userSignUpModule        *usersignup.Module
+	oneTimeAccessModule     *onetimeaccess.Module
+	emailVerificationModule *emailverification.Module
+	apiModule               *api.Module
+	environmentModule       *environment.Module
+	logoPresetModule        *logopreset.Module
+	actors                  francishost.Host
+}
+
+// Initializes all services
+func initServices(
+	ctx context.Context,
+	db *gorm.DB,
+	instanceID string,
+	actors francishost.Host,
+	httpClient *http.Client,
+	outboundClients *outbound.Clients,
+	imageExtensions map[string]string,
+	fileStorage storage.FileStorage,
+) (svc *services, err error) {
+	svc = &services{
+		actors: actors,
+	}
+
+	// Init the app config service
+	svc.appConfigService, err = appconfig.NewService(ctx, actors, db)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create app config service: %w", err)
+	}
+
+	svc.fileStorage = fileStorage
+	svc.appImagesService = service.NewAppImagesService(imageExtensions, fileStorage)
+
+	svc.emailModule, err = email.New(db)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create email module: %w", err)
+	}
+
+	// Select the location provider once so all consumers use the configured implementation
+	svc.ipLocator, svc.geoLiteModule, err = initIPLocationResolver(ctx, httpClient, &common.EnvConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create IP location resolver: %w", err)
+	}
+
+	svc.jwtService, err = service.NewJwtService(ctx, db, instanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create JWT service: %w", err)
+	}
+
+	svc.auditLogsModule, err = auditlogs.New(auditlogs.Dependencies{
+		Signer:        svc.jwtService,
+		AppURL:        common.EnvConfig.AppURL,
+		EmailSender:   svc.emailModule,
+		IPLocator:     svc.ipLocator,
+		AppConfig:     svc.appConfigService,
+		DB:            db,
+		Actors:        actors,
+		RetentionDays: common.EnvConfig.AuditLogRetentionDays,
+		// Disable in test environment
+		CleanupDisabled: common.EnvConfig.AppEnv.IsTest(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create audit logs module: %w", err)
+	}
+
+	svc.customClaimService = service.NewCustomClaimService(db)
+	svc.webauthnModule, err = webauthn.New(webauthn.Dependencies{
+		DB:        db,
+		Actors:    actors,
+		AppURL:    common.EnvConfig.AppURL,
+		Signer:    svc.jwtService,
+		AuditLog:  svc.auditLogsModule,
+		AppConfig: svc.appConfigService,
+		// Disable in test environment
+		CleanupDisabled: common.EnvConfig.AppEnv.IsTest(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create WebAuthn module: %w", err)
+	}
+	svc.deviceLoginModule, err = devicelogin.New(devicelogin.Dependencies{
+		DB:        db,
+		BaseURL:   common.EnvConfig.AppURL,
+		Actors:    actors,
+		Signer:    svc.jwtService,
+		Reauth:    svc.webauthnModule,
+		AuditLog:  svc.auditLogsModule,
+		IPLocator: svc.ipLocator,
+		AppConfig: svc.appConfigService,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create device login module: %w", err)
+	}
+
+	svc.scimSyncModule, err = scimsync.New(scimsync.Dependencies{
+		DB:         db,
+		Actors:     actors,
+		HTTPClient: outboundClients.Client(outbound.PurposeSCIM),
+		// Disable in test environment
+		ScheduleDisabled: common.EnvConfig.AppEnv.IsTest(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create SCIM sync module: %w", err)
+	}
+
+	svc.apiModule = api.New(api.Dependencies{DB: db, Issuer: common.EnvConfig.AppURL})
+
+	svc.oidcModule, err = oidc.New(ctx, oidc.Dependencies{
+		DB:                  db,
+		Actors:              actors,
+		FederatedJWKSClient: outboundClients.Client(outbound.PurposeFederatedJWKS),
+		CIMDTransport:       outboundClients.Transport(outbound.PurposeClientMetadata),
+		GetCIMDURLAllowlist: svc.appConfigService.GetCIMDURLAllowlist,
+		Config: oidc.Config{
+			BaseURL:                   common.EnvConfig.AppURL,
+			TokenBaseURL:              common.EnvConfig.AppURL,
+			Secret:                    common.EnvConfig.EncryptionKey,
+			AllowInsecureCallbackURLs: common.EnvConfig.AllowInsecureCallbackURLs,
+		},
+		Signer:       svc.jwtService,
+		CustomClaims: svc.customClaimService,
+		Reauth:       svc.webauthnModule,
+		AuditLog:     svc.auditLogsModule,
+		APIAccess:    svc.apiModule,
+		AppConfig:    svc.appConfigService,
+		// Disable in test environment
+		CleanupDisabled: common.EnvConfig.AppEnv.IsTest(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create OIDC module: %w", err)
+	}
+
+	backchannelLogoutService, err := backchannellogout.NewService(db, svc.jwtService, outboundClients.Client(outbound.PurposeBackchannelLogout), actors)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create back-channel logout service: %w", err)
+	}
+
+	svc.oidcService, err = service.NewOidcService(db, svc.jwtService, svc.oidcModule.Preview, svc.oidcModule, svc.scimSyncModule, backchannelLogoutService, outboundClients.Client(outbound.PurposeClientLogo), fileStorage)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create OIDC service: %w", err)
+	}
+
+	svc.userGroupService = service.NewUserGroupService(db, svc.scimSyncModule, backchannelLogoutService)
+	// The user service sends verification links through this module, so it's created first and never depends on the user service itself
+	svc.emailVerificationModule, err = emailverification.New(emailverification.Dependencies{
+		DB:          db,
+		Actors:      actors,
+		EmailSender: svc.emailModule,
+		ScimSync:    svc.scimSyncModule,
+		AppConfig:   svc.appConfigService,
+		AppURL:      common.EnvConfig.AppURL,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create email verification module: %w", err)
+	}
+
+	svc.userService = service.NewUserService(db, svc.jwtService, svc.customClaimService, svc.appImagesService, svc.scimSyncModule, backchannelLogoutService, fileStorage, svc.emailVerificationModule)
+
+	svc.ldapSyncModule, err = ldapsync.New(ldapsync.Dependencies{
+		DB:                db,
+		Actors:            actors,
+		HTTPClient:        outboundClients.Client(outbound.PurposeLDAPPicture),
+		FileStorage:       fileStorage,
+		Users:             svc.userService,
+		Groups:            svc.userGroupService,
+		AppConfig:         svc.appConfigService,
+		ScimSync:          svc.scimSyncModule,
+		BackchannelLogout: backchannelLogoutService,
+		// Disable in test environment
+		ScheduleDisabled: common.EnvConfig.AppEnv.IsTest(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create LDAP sync module: %w", err)
+	}
+
+	svc.apiKeyModule, err = apikey.New(ctx, apikey.Dependencies{
+		DB:              db,
+		Actors:          actors,
+		StaticApiKey:    common.EnvConfig.StaticApiKey,
+		AppConfig:       svc.appConfigService,
+		EmailSender:     svc.emailModule,
+		CleanupDisabled: common.EnvConfig.AppEnv.IsTest(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create API key module: %w", err)
+	}
+
+	svc.userSignUpModule, err = usersignup.New(usersignup.Dependencies{
+		DB:                db,
+		Actors:            actors,
+		Signer:            svc.jwtService,
+		AuditLog:          svc.auditLogsModule,
+		UserCreator:       svc.userService,
+		AppConfig:         svc.appConfigService,
+		ScimSync:          svc.scimSyncModule,
+		UserDeleter:       svc.userService,
+		EmailVerification: svc.emailVerificationModule,
+		// Disable in test environment
+		CleanupDisabled: common.EnvConfig.AppEnv.IsTest(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create user signup module: %w", err)
+	}
+
+	svc.oneTimeAccessModule, err = onetimeaccess.New(onetimeaccess.Dependencies{
+		DB:           db,
+		Actors:       actors,
+		Signer:       svc.jwtService,
+		AuditLog:     svc.auditLogsModule,
+		UserProvider: svc.userService,
+		EmailSender:  svc.emailModule,
+		AppConfig:    svc.appConfigService,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create one-time access module: %w", err)
+	}
+
+	svc.environmentModule = environment.New(environment.Dependencies{
+		HTTPClient:                  httpClient,
+		SQLiteOnNetworkedFilesystem: sqliteOnNetworkedFilesystem,
+	})
+
+	// An empty base URL keeps the icon library disabled
+	var iconLibraryURL string
+	if common.EnvConfig.IconLibraryEnabled() {
+		iconLibraryURL = common.EnvConfig.IconLibraryURL
+	}
+	svc.logoPresetModule = logopreset.New(logopreset.Dependencies{
+		HTTPClient: httpClient,
+		BaseURL:    iconLibraryURL,
+	})
+
+	return svc, nil
+}
+
+func initIPLocationResolver(ctx context.Context, httpClient *http.Client, config *common.EnvConfigSchema) (iplocation.Resolver, *geolite.Module, error) {
+	// Cloudflare locations need no database initialization or background refresh
+	if config.CloudflareLocationHeaders {
+		return iplocation.NewCloudflareResolver(), nil, nil
+	}
+
+	module, err := geolite.New(ctx, geolite.Dependencies{
+		HTTPClient:  httpClient,
+		DBPath:      config.GeoLiteDBPath,
+		DownloadURL: config.GeoLiteDBUrl,
+		LicenseKey:  config.MaxMindLicenseKey,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	return module, module, nil
+}
