@@ -1,31 +1,17 @@
-# Changelog — Pocket ID (distribuição Sixme AI)
+# Changelog — Pocket ID (Sixme AI)
 
 ## [1.0.0] — 2026-11-14
 
-Primeira versão própria do Pocket ID no repositório `sixme-ai/pocket-id`. A numeração **1.0.0** identifica a distribuição mantida pela Sixme AI e é independente das versões publicadas pelo projeto original.
+Primeira versão da distribuição Sixme AI, baseada no **Pocket ID v2.19.2**.
 
-### Origem e rastreabilidade
+### Alterações
 
-- **Código-base:** Pocket ID original, **versão 2.19.2** (`pocket-id/pocket-id`).
-- **Referência original:** https://github.com/pocket-id/pocket-id/releases/tag/v2.19.2
-- **Importação da base para a nossa distribuição:** commit `2bead23332`, na branch `dev`.
-- A versão original **2.19.2 não é a versão desta distribuição**: serve exclusivamente para identificar de onde veio o código.
-- Licença e histórico de alterações do projeto original preservados abaixo, começando em `v2.19.2`.
-
-### Alterações da distribuição Sixme AI
-
-- **OAuth 2.0 / OIDC:** ajustes de autorização local com **PKCE S256**, anúncio apenas dos métodos suportados e correções no fluxo de revogação de tokens.
-- **Integração local com agentes:** bootstrap isolado em loopback para autenticação humana e OAuth, criação de credencial local por instalação e encerramento controlado dos processos de teste.
-- **Distribuição de testes:** instalador Linux autônomo `.run`, empacotamento do backend e dependências, scripts de inicialização/parada e testes de smoke do instalador.
-- **CI e empacotamento:** ajustes de execução, validação da comunicação local e correção do processamento de payload do instalador.
-- **Railway:** adaptação dos identificadores de cache BuildKit no `docker/Dockerfile` para o serviço Pocket ID, mantendo etapas de build e parâmetros de execução.
-
-### Operação e compatibilidade
-
-- **Origem de código da distribuição:** `sixme-ai/pocket-id`. O fluxo de promoção é `dev` → `main`; a branch `main` é a referência pretendida para produção.
-- **Persistência:** preservar o volume de dados `/app/data` e a variável `ENCRYPTION_KEY` existente durante a troca de branch; substituí-los pode comprometer dados e credenciais já cadastrados.
-- **Autenticação do GitHub MCP:** a integração de produção requer cliente OAuth, introspecção e identidade de workload compatíveis com esta instância, sem reutilizar credenciais locais de testes.
-- O registro de versão não implica criação de tag, alteração do executável ou publicação de deploy.
+- **OAuth 2.0 / OIDC:** melhorias na autorização com PKCE S256, introspecção e revogação segura de tokens.
+- **Autenticação federada:** implementação de autenticação de clientes por assertivas assinadas e validação de permissões.
+- **Integração com agentes:** suporte à autenticação OAuth local, clientes M2M e integração MCP.
+- **Instalador Linux:** implementação de instalador autônomo `.run`, com provisionamento de credenciais e gerenciamento dos serviços locais.
+- **Empacotamento:** correções na geração e execução do instalador.
+- **Versionamento:** centralização da versão da aplicação no arquivo `.version`.
 
 ---
 
