@@ -14,6 +14,7 @@ install -m 700 "$bin_dir/pocket-id" "$bin_dir/bootstrap" "$scripts/stop.sh" "$st
 sed 's/^readonly profile=http$/readonly profile=https/' "$scripts/start.sh" > "$stage/start.sh"
 grep -Fxq 'readonly profile=https' "$stage/start.sh"
 chmod 700 "$stage/start.sh"
+install -m 600 "$scripts/verify-https-env.awk" "$stage/"
 install -m 600 "$scripts/README-https.txt" "$stage/README.txt"
 install -m 600 "$scripts/../../LICENSE" "$stage/LICENSE.pocket-id"
 name=pocket-id-local-agent-https-v1-linux-amd64

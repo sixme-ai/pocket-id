@@ -10,21 +10,28 @@ fail() { printf 'Pocket ID local ERROR: %s\n' "$*" >&2; exit 1; }
 readonly profile=http
 port=1411
 actor_port=1414
-tls_config=
 args=()
 server=(./pocket-id)
 if [[ "$profile" == https ]]; then
   port=14411
   actor_port=14414
   args=(--https)
-  tls_config=$'TLS_CERT_FILE=tls/server.pem\nTLS_KEY_FILE=tls/server.key'
   command -v flock >/dev/null || fail 'flock is required to protect startup'
   exec 9>.https-start.lock
   flock -x 9
   ./bootstrap --prepare-tls
-  server=(env -i "PATH=$PATH" "HOME=$HOME" ./pocket-id)
+  server=(env -i "PATH=$PATH")
+  if [[ -n "${HOME:-}" ]]; then server+=("HOME=$HOME"); fi
+  server+=(./pocket-id)
 fi
 origin="$profile://localhost:$port"
+settings=("APP_URL=$origin" "INTERNAL_APP_URL=$origin" "HOST=127.0.0.1" "PORT=$port"
+          "ACTORS_HOST=127.0.0.1" "ACTORS_PORT=$actor_port"
+          "VERSION_CHECK_DISABLED=true" "ANALYTICS_DISABLED=true" "ICON_LIBRARY_URL=disabled"
+          "ALLOW_INSECURE_CALLBACK_URLS=false")
+if [[ "$profile" == https ]]; then
+  settings+=("TLS_CERT_FILE=tls/server.pem" "TLS_KEY_FILE=tls/server.key")
+fi
 mkdir -p data logs
 chmod 700 data logs
 [[ ! -L .env ]] || fail 'Refusing a symlink at .env'
@@ -32,28 +39,13 @@ if [[ ! -f .env ]]; then
   key="$(od -An -N32 -tx1 /dev/urandom | tr -d ' \n')"
   api_key="$(od -An -N32 -tx1 /dev/urandom | tr -d ' \n')"
   [[ "$api_key" =~ ^[0-9a-f]{64}$ ]] || fail 'Could not generate local test API key'
-  ( set -C; cat > .env <<EOF
-APP_URL=$origin
-INTERNAL_APP_URL=$origin
-HOST=127.0.0.1
-PORT=$port
-ACTORS_HOST=127.0.0.1
-ACTORS_PORT=$actor_port
-ENCRYPTION_KEY=$key
-STATIC_API_KEY=$api_key
-VERSION_CHECK_DISABLED=true
-ANALYTICS_DISABLED=true
-ICON_LIBRARY_URL=disabled
-ALLOW_INSECURE_CALLBACK_URLS=false
-$tls_config
-EOF
+  ( set -C; printf '%s\n' "${settings[@]}" "ENCRYPTION_KEY=$key" "STATIC_API_KEY=$api_key" > .env
   ) || fail 'Could not create local .env'
   chmod 600 .env
 fi
 if [[ "$profile" == https ]]; then
-  for setting in "APP_URL=$origin" "INTERNAL_APP_URL=$origin" "HOST=127.0.0.1" "PORT=$port" "ACTORS_HOST=127.0.0.1" "ACTORS_PORT=$actor_port" "TLS_CERT_FILE=tls/server.pem" "TLS_KEY_FILE=tls/server.key"; do
-    grep -Fxq "$setting" .env || fail 'Existing configuration differs from the HTTPS profile'
-  done
+  LC_ALL=C awk -f verify-https-env.awk <(printf '%s\n' "${settings[@]}") .env ||
+    fail 'Existing configuration differs from the HTTPS profile'
 fi
 alive=0
 if [[ -f .pocket-id.pid && ! -L .pocket-id.pid ]]; then
