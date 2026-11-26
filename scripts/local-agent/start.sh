@@ -19,6 +19,12 @@ if [[ "$profile" == https ]]; then
   command -v flock >/dev/null || fail 'flock is required to protect startup'
   exec 9>.https-start.lock
   flock -x 9
+  if [[ -e .oauth-profile || -L .oauth-profile ]]; then
+    [[ -f .oauth-profile && ! -L .oauth-profile && "$(< .oauth-profile)" == aquifer ]] ||
+      fail 'Invalid stored OAuth profile'
+    args+=(--profile aquifer)
+  fi
+  ./bootstrap --check-profile "${args[@]}"
   ./bootstrap --prepare-tls
   server=(env -i "PATH=$PATH")
   if [[ -n "${HOME:-}" ]]; then server+=("HOME=$HOME"); fi

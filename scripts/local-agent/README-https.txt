@@ -6,3 +6,11 @@ The issuer is https://localhost:14411. Discovery is /.well-known/openid-configur
 The default resource is http://localhost:18080/mcp and the public PKCE callback is http://localhost:3000/callback. The bootstrap validates discovery and the introspection endpoint before authorizing any local provisioning request. The login link, local OAuth registry and workload/server private keys stay with the installation owner. Share only the public CA, its fingerprint, public client ID and public profile details. Security binds the profile independently.
 
 Stop with <install>/stop.sh. Restart with the identical .run and directory. It retains the original TLS identity and OAuth registration. Another installer build requires a separate directory. Stop the old HTTPS test instance before using the same reserved profile ports in a separate installation. The HTTP DevKit profile has separate ports and directories.
+
+Aquifer uses the same issuer and introspection endpoint. On an isolated laboratory host, choose a fresh, private absolute directory and run the verified HTTPS installer:
+
+  POCKET_ID_INSTALL_DIR=/absolute/private/issuer ./pocket-id-local-agent-https-v1-linux-amd64.run --profile aquifer
+
+The public MCP client uses PKCE, the callback https://localhost:3000/callback and the delegated scope aquifer:mcp for https://localhost:18443/mcp. The separate confidential Web client uses PKCE and only https://localhost:18443/login/oauth2/code/pocket-id. Its public origin is https://localhost:18443. Restarts in the same directory retain the selection. Each profile needs its own directory. The HTTPS issuer port serves one installation at a time.
+
+The installation owner supplies AQUIFER_OAUTH_ISSUER=https://localhost:14411 and AQUIFER_REVIEW_PUBLIC_ORIGIN=https://localhost:18443 to the consumer. Read human_client_id into AQUIFER_OAUTH_MCP_CLIENT_ID and web_client_id into AQUIFER_OIDC_WEB_CLIENT_ID. Supply web_client_secret privately as AQUIFER_OIDC_WEB_CLIENT_SECRET from the same installation's .local-oauth.json (mode 0600). The federated workload key stays with the MCP backend. Configure browser and JVM trust for the public CA of this installation before either flow.

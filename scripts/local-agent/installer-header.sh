@@ -3,13 +3,21 @@ set -Eeuo pipefail
 umask 077
 
 readonly ARCHIVE_SHA256="__ARCHIVE_SHA256__"
+readonly transport=http
 
 fail() { printf 'Pocket ID installer ERROR: %s\n' "$*" >&2; exit 1; }
 
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
-  printf 'Usage: ./pocket-id-local-agent-linux-amd64.run\n'
+  usage=./pocket-id-local-agent-linux-amd64.run
+  if [[ "$transport" == https ]]; then usage+=' [--profile aquifer]'; fi
+  printf 'Usage: %s\n' "$usage"
   printf 'Set POCKET_ID_INSTALL_DIR to an absolute private directory to override the default.\n'
   exit 0
+fi
+requested_profile=
+if [[ "$transport" == https && $# -eq 2 && "$1" == --profile && "$2" == aquifer ]]; then
+  requested_profile=aquifer
+  shift 2
 fi
 [[ "$#" -eq 0 ]] || fail 'Unsupported argument (use --help)'
 [[ "$(uname -s)" == "Linux" && "$(uname -m)" == "x86_64" ]] || fail 'Linux x86_64 required'
@@ -37,6 +45,11 @@ if [[ -e "$install_dir" || -L "$install_dir" ]]; then
   marker_file="$install_dir/.installer-archive.sha256"
   [[ -f "$marker_file" && ! -L "$marker_file" ]] || fail 'Destination already exists; refusing to overwrite user data'
   [[ "$(< "$marker_file")" == "$ARCHIVE_SHA256" ]] || fail 'Different installer version; refusing to overwrite local data'
+  if [[ "$requested_profile" == aquifer ]]; then
+    profile_file="$install_dir/.oauth-profile"
+    [[ -f "$profile_file" && ! -L "$profile_file" && "$(< "$profile_file")" == aquifer ]] ||
+      fail 'Installation has a different OAuth profile; use a separate directory'
+  fi
   [[ -x "$install_dir/start.sh" ]] || fail 'Existing installation is incomplete'
   "$install_dir/start.sh"
   exit
@@ -62,6 +75,9 @@ done
 [[ ! -e "$staging/local-agent/.env" && ! -e "$staging/local-agent/shared-admin-key.txt" ]] || fail 'Bundle must never contain a local secret'
 
 printf '%s\n' "$ARCHIVE_SHA256" > "$staging/local-agent/.installer-archive.sha256"
+if [[ "$requested_profile" == aquifer ]]; then
+  printf 'aquifer\n' > "$staging/local-agent/.oauth-profile"
+fi
 chmod 600 "$staging/local-agent/.installer-archive.sha256"
 chmod 700 "$staging/local-agent"
 mv -T -- "$staging/local-agent" "$install_dir" || fail 'Cannot install without overwriting destination'
