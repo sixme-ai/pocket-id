@@ -4,6 +4,8 @@ import base64
 import json
 import os
 import secrets
+import ssl
+from local_tls import prepare_tls
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 import sys
@@ -14,7 +16,13 @@ import urllib.parse
 import urllib.request
 
 ROOT = Path(sys.executable if getattr(sys, "frozen", False) else __file__).resolve().parent
-BASE = "http://localhost:1411"
+if sys.argv[1:] == ["--prepare-tls"]:
+    prepare_tls(ROOT)
+    sys.exit(0)
+if sys.argv[1:] not in ([], ["--https"]):
+    raise SystemExit("Unsupported bootstrap profile")
+HTTPS = sys.argv[1:] == ["--https"]
+BASE = "https://localhost:14411" if HTTPS else "http://localhost:1411"
 STATE = ROOT / ".local-oauth.json"
 RESOURCE = os.environ.get("LOCAL_MCP_RESOURCE", "http://localhost:18080/mcp")
 CALLBACK = os.environ.get("LOCAL_OAUTH_CALLBACK", "http://localhost:3000/callback")
@@ -27,7 +35,17 @@ config = dict(line.split("=", 1) for line in (ROOT / ".env").read_text().splitli
 API_KEY = config.get("STATIC_API_KEY", "")
 if len(API_KEY) < 16:
     raise SystemExit("STATIC_API_KEY missing from local .env")
-OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+class RejectRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+handlers = [urllib.request.ProxyHandler({})]
+if HTTPS:
+    tls = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    tls.load_verify_locations(cafile=str(ROOT / "tls" / "ca.pem"))
+    handlers.extend([RejectRedirect(), urllib.request.HTTPSHandler(context=tls)])
+OPENER = urllib.request.build_opener(*handlers)
 
 
 def request(method, path, data=None, *, admin=False, form=False):
@@ -59,7 +77,8 @@ def expect(status, payload, wanted, stage):
 for attempt in range(90):
     try:
         status, meta = request("GET", "/.well-known/openid-configuration")
-        if status == 200 and meta.get("issuer") == BASE:
+        if (status == 200 and meta.get("issuer") == BASE
+                and (not HTTPS or meta.get("introspection_endpoint") == BASE + "/api/oidc/introspect")):
             status, jwks = request("GET", "/.well-known/jwks.json")
             if status == 200 and isinstance(jwks.get("keys"), list) and jwks["keys"]:
                 break

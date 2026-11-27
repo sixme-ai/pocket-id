@@ -195,3 +195,19 @@ jobs:
           path: dist/pocket-id-local-agent-linux-amd64.run
           if-no-files-found: error
           retention-days: 14
+
+      - name: Build and verify the independent HTTPS laboratory installer
+        shell: bash
+        run: |
+          set -euo pipefail
+          scripts/local-agent/package-https.sh dist/local-agent dist
+          scripts/local-agent/smoke-https.sh "$PWD/dist/pocket-id-local-agent-https-v1-linux-amd64.run" "$RUNNER_TEMP/pocket-id-https-fresh"
+          scripts/local-agent/smoke-https.sh "$PWD/dist/pocket-id-local-agent-https-v1-linux-amd64.run" "$RUNNER_TEMP/pocket-id-https-home" default
+
+      - name: Publish verified HTTPS installer separately
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: pocket-id-local-agent-https-v1-linux-amd64-run
+          path: dist/pocket-id-local-agent-https-v1-linux-amd64.run
+          if-no-files-found: error
+          retention-days: 14
