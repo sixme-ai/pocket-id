@@ -22,7 +22,18 @@ if sys.argv[1:] == ["--prepare-tls"]:
 if sys.argv[1:] not in ([], ["--https"]):
     raise SystemExit("Unsupported bootstrap profile")
 HTTPS = sys.argv[1:] == ["--https"]
-BASE = "https://localhost:14411" if HTTPS else "http://localhost:1411"
+config = dict(line.split("=", 1) for line in (ROOT / ".env").read_text().splitlines() if "=" in line)
+if HTTPS:
+    port_string = config.get("PORT", "")
+    if not (port_string.isascii() and port_string.isdecimal() and
+            port_string[0:1] != "0" and 1 <= len(port_string) <= 5 and
+            1 <= int(port_string) <= 65535):
+        raise SystemExit("Invalid HTTPS port in provisioned profile")
+    BASE = f"https://localhost:{port_string}"
+    if config.get("APP_URL") != BASE or config.get("INTERNAL_APP_URL") != BASE:
+        raise SystemExit("HTTPS issuer/port differs from provisioned profile")
+else:
+    BASE = "http://localhost:1411"
 STATE = ROOT / ".local-oauth.json"
 RESOURCE = os.environ.get("LOCAL_MCP_RESOURCE", "http://localhost:18080/mcp")
 CALLBACK = os.environ.get("LOCAL_OAUTH_CALLBACK", "http://localhost:3000/callback")
@@ -31,7 +42,6 @@ for item in (RESOURCE, CALLBACK):
     if parsed.scheme != "http" or parsed.hostname not in {"localhost", "127.0.0.1", "::1"}:
         raise SystemExit("Local test resource and callback must use loopback HTTP")
 
-config = dict(line.split("=", 1) for line in (ROOT / ".env").read_text().splitlines() if "=" in line)
 API_KEY = config.get("STATIC_API_KEY", "")
 if len(API_KEY) < 16:
     raise SystemExit("STATIC_API_KEY missing from local .env")

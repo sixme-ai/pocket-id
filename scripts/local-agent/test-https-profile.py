@@ -9,14 +9,17 @@ import sys
 from urllib.parse import urlencode
 
 root = Path(sys.argv[1])
-issuer = "https://localhost:14411"
+profile = dict(line.split("=", 1) for line in (root / ".env").read_text().splitlines() if "=" in line)
+port = int(profile["PORT"])
+assert profile["APP_URL"] == profile["INTERNAL_APP_URL"] == f"https://localhost:{port}"
+issuer = profile["APP_URL"]
 token_path = "/api/oidc/token"
 introspection_path = "/api/oidc/introspect"
 tls = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 tls.load_verify_locations(cafile=str(root / "tls" / "ca.pem"))
 for hostname, trust in [("127.0.0.1", tls), ("localhost", ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT))]:
     try:
-        with socket.create_connection(("127.0.0.1", 14411), timeout=5) as raw:
+        with socket.create_connection(("127.0.0.1", port), timeout=5) as raw:
             with trust.wrap_socket(raw, server_hostname=hostname):
                 raise ValueError("Expected TLS identity rejection")
     except ssl.SSLCertVerificationError:
@@ -24,7 +27,7 @@ for hostname, trust in [("127.0.0.1", tls), ("localhost", ssl.SSLContext(ssl.PRO
 
 
 def request(method, path, form=None, auth=None):
-    connection = http.client.HTTPSConnection("localhost", 14411, timeout=8, context=tls)
+    connection = http.client.HTTPSConnection("localhost", port, timeout=8, context=tls)
     headers = {"Content-Type": "application/x-www-form-urlencoded"} if form else {}
     if auth:
         headers["Authorization"] = "Basic " + base64.b64encode(auth.encode()).decode()
