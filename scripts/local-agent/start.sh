@@ -13,8 +13,26 @@ actor_port=1414
 args=()
 server=(./pocket-id)
 if [[ "$profile" == https ]]; then
-  port=14411
-  actor_port=14414
+  # Preserve the issuer's port on restart; never migrate an OAuth identity silently.
+  if [[ -f .env ]]; then
+    port="$(LC_ALL=C awk -F= '$1 == "PORT" { count++; port=$2 } END {
+      if (count != 1 || port !~ /^[1-9][0-9]*$/) exit 1
+      print port
+    }' .env)" || fail 'Existing HTTPS profile has an invalid PORT'
+    if [[ -n "${POCKET_ID_HTTPS_PORT:-}" && "$POCKET_ID_HTTPS_PORT" != "$port" ]]; then
+      fail 'Existing HTTPS port is immutable; choose a fresh installation directory'
+    fi
+  else
+    port="${POCKET_ID_HTTPS_PORT:-14411}"
+  fi
+  [[ "$port" =~ ^[1-9][0-9]{0,4}$ ]] && (( 10#$port <= 65535 )) ||
+    fail 'HTTPS port must be between 1 and 65535'
+  # The actor transport needs a distinct loopback port for each installation.
+  if (( port <= 65532 )); then
+    actor_port=$((port + 3))
+  else
+    actor_port=$((port - 3))
+  fi
   args=(--https)
   command -v flock >/dev/null || fail 'flock is required to protect startup'
   exec 9>.https-start.lock
@@ -58,6 +76,9 @@ fi
 if (( !alive )); then
   if (echo > /dev/tcp/127.0.0.1/"$port") >/dev/null 2>&1; then
     fail "Port 127.0.0.1:$port already occupied by another process"
+  fi
+  if [[ "$profile" == https ]] && (echo > /dev/tcp/127.0.0.1/"$actor_port") >/dev/null 2>&1; then
+    fail "Actor port 127.0.0.1:$actor_port already occupied by another process"
   fi
   nohup "${server[@]}" 9>&- > logs/pocket-id.log 2>&1 < /dev/null &
   pid=$!
