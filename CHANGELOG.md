@@ -1,3 +1,24 @@
+# Changelog — Pocket ID (Sixme AI)
+
+## [1.0.0] — 2026-11-14
+
+Primeira versão da distribuição Sixme AI, baseada no **Pocket ID v2.19.2**.
+
+### Alterações
+
+- **OAuth 2.0 / OIDC:** melhorias na autorização com PKCE S256, introspecção e revogação segura de tokens.
+- **Autenticação federada:** implementação de autenticação de clientes por assertivas assinadas e validação de permissões.
+- **Integração com agentes:** suporte à autenticação OAuth local, clientes M2M e integração MCP.
+- **Instalador Linux:** implementação de instalador autônomo `.run`, com provisionamento de credenciais e gerenciamento dos serviços locais.
+- **Empacotamento:** correções na geração e execução do instalador.
+- **Versionamento:** centralização da versão da aplicação no arquivo `.version`.
+
+---
+
+## Histórico do projeto original (upstream)
+
+O histórico a seguir é mantido como referência do **Pocket ID original** e utiliza a numeração própria do projeto upstream.
+
 ## v2.19.2
 
 ### Other

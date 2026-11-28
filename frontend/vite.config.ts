@@ -5,7 +5,7 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from '@tailwindcss/vite';
 import sbom from 'rollup-plugin-sbom';
 import { defineConfig, type Plugin, lazyPlugins } from 'vite-plus';
-import packageJson from './package.json' with { type: 'json' };
+import { readFileSync } from 'node:fs';
 
 export default defineConfig(() => {
 	const frontendSbom = sbom({
@@ -29,7 +29,7 @@ export default defineConfig(() => {
 					precompress: true
 				}),
 				version: {
-					name: packageJson.version,
+					name: readFileSync(new URL('../.version', import.meta.url), 'utf8').trim(),
 					pollInterval: 0
 				}
 			}),

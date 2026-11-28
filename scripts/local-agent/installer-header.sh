@@ -3,19 +3,22 @@ set -Eeuo pipefail
 umask 077
 
 readonly ARCHIVE_SHA256="__ARCHIVE_SHA256__"
-readonly transport=http
+readonly install_profile=http
 
 fail() { printf 'Pocket ID installer ERROR: %s\n' "$*" >&2; exit 1; }
 
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
   usage=./pocket-id-local-agent-linux-amd64.run
-  if [[ "$transport" == https ]]; then usage+=' [--profile aquifer]'; fi
+  if [[ "$install_profile" == https ]]; then usage+=' [--profile aquifer]'; fi
   printf 'Usage: %s\n' "$usage"
   printf 'Set POCKET_ID_INSTALL_DIR to an absolute private directory to override the default.\n'
+  if [[ "$install_profile" == https ]]; then
+    printf 'On first install choose an HTTPS port interactively, or set POCKET_ID_HTTPS_PORT.\n'
+  fi
   exit 0
 fi
 requested_profile=
-if [[ "$transport" == https && $# -eq 2 && "$1" == --profile && "$2" == aquifer ]]; then
+if [[ "$install_profile" == https && $# -eq 2 && "$1" == --profile && "$2" == aquifer ]]; then
   requested_profile=aquifer
   shift 2
 fi
@@ -53,6 +56,21 @@ if [[ -e "$install_dir" || -L "$install_dir" ]]; then
   [[ -x "$install_dir/start.sh" ]] || fail 'Existing installation is incomplete'
   "$install_dir/start.sh"
   exit
+fi
+
+# The HTTPS installer asks for the port before extracting or creating any files.
+# Existing installations do not prompt: their original issuer/port is immutable.
+if [[ "$install_profile" == https ]]; then
+  if [[ -n "${POCKET_ID_HTTPS_PORT:-}" ]]; then
+    selected_port="$POCKET_ID_HTTPS_PORT"
+  else
+    printf 'Pocket ID HTTPS port (1-65535) [14411]: ' >&2
+    IFS= read -r selected_port || fail 'No port entered; set POCKET_ID_HTTPS_PORT for unattended installation'
+    selected_port="${selected_port:-14411}"
+  fi
+  [[ "$selected_port" =~ ^[1-9][0-9]{0,4}$ ]] && (( 10#$selected_port <= 65535 )) ||
+    fail 'Invalid HTTPS port: use a decimal number between 1 and 65535'
+  export POCKET_ID_HTTPS_PORT="$selected_port"
 fi
 
 parent_dir="$(dirname -- "$install_dir")"

@@ -20,10 +20,10 @@ install -m 600 "$scripts/../../LICENSE" "$stage/LICENSE.pocket-id"
 name=pocket-id-local-agent-https-v1-linux-amd64
 tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner -C "$temp" -cf - local-agent | gzip -n > "$temp/payload.tar.gz"
 hash="$(sha256sum "$temp/payload.tar.gz" | cut -d' ' -f1)"
-sed -e 's/^readonly transport=http$/readonly transport=https/' \
-    -e "s/__ARCHIVE_SHA256__/$hash/" -e "s/pocket-id-local-agent-linux-amd64.run/$name.run/g" \
+sed -e "s/__ARCHIVE_SHA256__/$hash/" -e "s/pocket-id-local-agent-linux-amd64.run/$name.run/g" \
+    -e 's/^readonly install_profile=http$/readonly install_profile=https/' \
     -e "s|/pocket-id-local-agent\"|/$name\"|g" "$scripts/installer-header.sh" > "$temp/installer"
-grep -Fxq 'readonly transport=https' "$temp/installer"
+grep -Fxq 'readonly install_profile=https' "$temp/installer"
 printf '\n__POCKET_ID_ARCHIVE_BELOW__\n' >> "$temp/installer"
 cat "$temp/payload.tar.gz" >> "$temp/installer"
 install -m 700 "$temp/installer" "$output/$name.run"
