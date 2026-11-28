@@ -79,6 +79,7 @@ jobs:
           set -euo pipefail
           python3 -m venv "$RUNNER_TEMP/pocket-bootstrap-venv"
           "$RUNNER_TEMP/pocket-bootstrap-venv/bin/python" -m pip install --disable-pip-version-check --no-input 'pyinstaller==6.16.0' 'cryptography==46.0.3'
+          "$RUNNER_TEMP/pocket-bootstrap-venv/bin/python" scripts/local-agent/test-aquifer-config.py
           "$RUNNER_TEMP/pocket-bootstrap-venv/bin/pyinstaller" --noconfirm --clean --onefile --name bootstrap \
             --distpath dist/local-agent --workpath "$RUNNER_TEMP/pyinstaller-work" \
             --specpath "$RUNNER_TEMP" scripts/local-agent/bootstrap.py
@@ -204,6 +205,7 @@ jobs:
           scripts/local-agent/smoke-https.sh "$PWD/dist/pocket-id-local-agent-https-v1-linux-amd64.run" "$RUNNER_TEMP/pocket-id-https-fresh" explicit 14511
           scripts/local-agent/smoke-https.sh "$PWD/dist/pocket-id-local-agent-https-v1-linux-amd64.run" "$RUNNER_TEMP/pocket-id-https-home" default 14611
           scripts/local-agent/smoke-https.sh "$PWD/dist/pocket-id-local-agent-https-v1-linux-amd64.run" "$RUNNER_TEMP/pocket-id-https-prompt" prompt 14711
+          scripts/local-agent/smoke-https.sh "$PWD/dist/pocket-id-local-agent-https-v1-linux-amd64.run" "$RUNNER_TEMP/pocket-id-aquifer" aquifer 14811
 
       - name: Publish verified HTTPS installer separately
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

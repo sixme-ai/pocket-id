@@ -9,6 +9,11 @@ from local_tls import prepare_tls
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 import sys
+import tempfile
+from oauth_profile import (
+    WEB_CALLBACK, WEB_ORIGIN, oauth_parameters, select_profile, verify_delegated_grant,
+    verify_public_registration, verify_resource, verify_web_registration,
+)
 from pathlib import Path
 import time
 import urllib.error
@@ -19,9 +24,18 @@ ROOT = Path(sys.executable if getattr(sys, "frozen", False) else __file__).resol
 if sys.argv[1:] == ["--prepare-tls"]:
     prepare_tls(ROOT)
     sys.exit(0)
-if sys.argv[1:] not in ([], ["--https"]):
-    raise SystemExit("Unsupported bootstrap profile")
-HTTPS = sys.argv[1:] == ["--https"]
+args = sys.argv[1:]
+check_only = args[:1] == ["--check-profile"]
+HTTPS, is_aquifer = select_profile(args[1:] if check_only else args)
+STATE = ROOT / ".local-oauth.json"
+if STATE.is_symlink():
+    raise RuntimeError("Credentials file must not be a symlink")
+state = json.loads(STATE.read_text()) if STATE.exists() else {}
+RESOURCE, CALLBACK, SCOPE = oauth_parameters(is_aquifer, state, os.environ)
+if check_only:
+    sys.exit(0)
+PUBLIC_NAME = "Local Aquifer MCP" if is_aquifer else "Local Human PKCE"
+
 config = dict(line.split("=", 1) for line in (ROOT / ".env").read_text().splitlines() if "=" in line)
 if HTTPS:
     port_string = config.get("PORT", "")
@@ -34,14 +48,6 @@ if HTTPS:
         raise SystemExit("HTTPS issuer/port differs from provisioned profile")
 else:
     BASE = "http://localhost:1411"
-STATE = ROOT / ".local-oauth.json"
-RESOURCE = os.environ.get("LOCAL_MCP_RESOURCE", "http://localhost:18080/mcp")
-CALLBACK = os.environ.get("LOCAL_OAUTH_CALLBACK", "http://localhost:3000/callback")
-for item in (RESOURCE, CALLBACK):
-    parsed = urllib.parse.urlparse(item)
-    if parsed.scheme != "http" or parsed.hostname not in {"localhost", "127.0.0.1", "::1"}:
-        raise SystemExit("Local test resource and callback must use loopback HTTP")
-
 API_KEY = config.get("STATIC_API_KEY", "")
 if len(API_KEY) < 16:
     raise SystemExit("STATIC_API_KEY missing from local .env")
@@ -113,67 +119,93 @@ else:
 
 
 def save(state):
-    target = STATE.with_suffix(".json.tmp")
-    fd = os.open(target, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w", encoding="utf-8") as output:
-        json.dump(state, output, indent=2)
-        output.write("\n")
-    os.replace(target, STATE)
-    os.chmod(STATE, 0o600)
+    fd, name = tempfile.mkstemp(prefix=".local-oauth-", dir=ROOT)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as output:
+            json.dump(state, output, indent=2)
+            output.write("\n")
+        os.replace(name, STATE)
+    finally:
+        Path(name).unlink(missing_ok=True)
 
 
-if STATE.is_symlink():
-    raise RuntimeError("Credentials file must not be a symlink")
-state = json.loads(STATE.read_text()) if STATE.exists() else {}
-if state and (state.get("resource") != RESOURCE or state.get("callback") != CALLBACK):
-    raise RuntimeError("Local OAuth resource/callback changed; refusing to reuse old grants")
+if is_aquifer:
+    state.update(profile="aquifer", scope=SCOPE, web_origin=WEB_ORIGIN, web_callback=WEB_CALLBACK)
 state.update(resource=RESOURCE, callback=CALLBACK)
 
 if "api_id" not in state:
-    status, obj = request("POST", "/api/apis", {"name": "Local GitHub MCP", "resource": RESOURCE}, admin=True)
+    api_name = "Local Aquifer MCP" if is_aquifer else "Local GitHub MCP"
+    status, obj = request("POST", "/api/apis", {"name": api_name, "resource": RESOURCE}, admin=True)
     state["api_id"] = expect(status, obj, 201, "Create MCP API")["id"]
     save(state)
 
 if "permission_id" not in state:
     status, obj = request("PUT", "/api/apis/" + state["api_id"] + "/permissions",
-                          {"permissions": [{"key": "mcp:access", "name": "MCP access"}]}, admin=True)
+                          {"permissions": [{"key": SCOPE, "name": "MCP access"}]}, admin=True)
     obj = expect(status, obj, 200, "Configure MCP scope")
-    state["permission_id"] = next(p["id"] for p in obj["permissions"] if p["key"] == "mcp:access")
+    state["permission_id"] = next(p["id"] for p in obj["permissions"] if p["key"] == SCOPE)
     save(state)
 
-if "m2m_client_id" not in state:
-    status, obj = request("POST", "/api/oidc/clients", {
-        "name": "Local Agent M2M", "isPublic": False, "pkceEnabled": True,
-        "callbackURLs": [CALLBACK]}, admin=True)
-    obj = expect(status, obj, 201, "Create confidential test client")
-    state["m2m_client_id"] = obj["id"]
-    state["m2m_client_secret"] = (obj.get("createdSecret") or {}).get("secret", "")
-    save(state)
+def provision_m2m_client():
+    if "m2m_client_id" not in state:
+        status, obj = request("POST", "/api/oidc/clients", {
+            "name": "Local Agent M2M", "isPublic": False, "pkceEnabled": True,
+            "callbackURLs": [CALLBACK]}, admin=True)
+        obj = expect(status, obj, 201, "Create confidential test client")
+        state["m2m_client_id"] = obj["id"]
+        state["m2m_client_secret"] = (obj.get("createdSecret") or {}).get("secret", "")
+        save(state)
 
-if not state.get("m2m_client_secret"):
-    status, obj = request("POST", "/api/oidc/clients/" + state["m2m_client_id"] + "/secrets", {}, admin=True)
-    state["m2m_client_secret"] = expect(status, obj, 201, "Create M2M secret")["secret"]
-    save(state)
+    if not state.get("m2m_client_secret"):
+        path = "/api/oidc/clients/" + state["m2m_client_id"] + "/secrets"
+        status, obj = request("POST", path, {}, admin=True)
+        state["m2m_client_secret"] = expect(status, obj, 201, "Create M2M secret")["secret"]
+        save(state)
 
-if not state.get("m2m_granted"):
-    status, obj = request("PUT", "/api/apis/" + state["api_id"] + "/clients/" + state["m2m_client_id"], {
-        "clientAccess": True, "clientPermissionIds": [state["permission_id"]],
-        "userDelegatedAccess": False, "userDelegatedPermissionIds": []}, admin=True)
-    expect(status, obj, 200, "Grant test M2M access")
-    state["m2m_granted"] = True
-    save(state)
+    if not state.get("m2m_granted"):
+        path = "/api/apis/" + state["api_id"] + "/clients/" + state["m2m_client_id"]
+        status, obj = request("PUT", path, {
+            "clientAccess": True, "clientPermissionIds": [state["permission_id"]],
+            "userDelegatedAccess": False, "userDelegatedPermissionIds": []}, admin=True)
+        expect(status, obj, 200, "Grant test M2M access")
+        state["m2m_granted"] = True
+        save(state)
+
+
+def provision_web_client():
+    if "web_client_id" not in state:
+        status, obj = request("POST", "/api/oidc/clients", {
+            "name": "Local Aquifer Web", "isPublic": False, "pkceEnabled": True,
+            "callbackURLs": [WEB_CALLBACK]}, admin=True)
+        client = expect(status, obj, 201, "Create confidential Web client")
+        state["web_client_id"] = client["id"]
+        state["web_client_secret"] = (client.get("createdSecret") or {}).get("secret", "")
+        save(state)
+    if not state.get("web_client_secret"):
+        raise RuntimeError("Web client secret missing; restore the private configuration")
+    status, obj = request("GET", "/api/oidc/clients/" + state["web_client_id"], admin=True)
+    client = expect(status, obj, 200, "Read back confidential Web client")
+    verify_web_registration(client)
+
+
+if is_aquifer:
+    provision_web_client()
+else:
+    provision_m2m_client()
 
 if "human_client_id" not in state:
     status, obj = request("POST", "/api/oidc/clients", {
-        "name": "Local Human PKCE", "isPublic": True, "pkceEnabled": True,
+        "name": PUBLIC_NAME, "isPublic": True, "pkceEnabled": True,
         "callbackURLs": [CALLBACK]}, admin=True)
     state["human_client_id"] = expect(status, obj, 201, "Create public human test client")["id"]
     save(state)
 
 if not state.get("human_granted"):
-    status, obj = request("PUT", "/api/apis/" + state["api_id"] + "/clients/" + state["human_client_id"], {
+    path = "/api/apis/" + state["api_id"] + "/clients/" + state["human_client_id"]
+    status, obj = request("PUT", path, {
         "clientAccess": False, "clientPermissionIds": [],
-        "userDelegatedAccess": True, "userDelegatedPermissionIds": [state["permission_id"]]}, admin=True)
+        "userDelegatedAccess": True, "userDelegatedPermissionIds": [state["permission_id"]]},
+        admin=True)
     expect(status, obj, 200, "Grant human PKCE access")
     state["human_granted"] = True
     save(state)
@@ -211,14 +243,14 @@ def jwk_integer(value):
     return base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")
 key_id = state.get("workload_kid") or secrets.token_hex(12)
 workload_issuer = BASE + "/local-mcp-workload"
-workload_subject = "local-github-mcp"
+workload_subject = "local-aquifer-mcp" if is_aquifer else "local-github-mcp"
 jwk = {"kty": "RSA", "use": "sig", "alg": "RS256", "kid": key_id,
        "n": jwk_integer(numbers.n), "e": jwk_integer(numbers.e)}
 identity = {"issuer": workload_issuer, "subject": workload_subject,
             "audience": BASE, "publicKeys": [jwk], "replayProtection": True}
 if not state.get("federated_granted"):
     status, obj = request("PUT", "/api/oidc/clients/" + state["human_client_id"], {
-        "name": "Local Human PKCE", "isPublic": True, "pkceEnabled": True,
+        "name": PUBLIC_NAME, "isPublic": True, "pkceEnabled": True,
         "callbackURLs": [CALLBACK],
         "credentials": {"federatedIdentities": [identity]}}, admin=True)
     expect(status, obj, 200, "Configure federated workload on same public PKCE client")
@@ -241,28 +273,39 @@ if not any(x.get("issuer") == workload_issuer
 print("Same-client federated workload identity with backend-only RSA and replay prevention: PASS")
 
 
-# Authenticate against the real token endpoint and reject a wrong client secret.
-form = {"grant_type": "client_credentials", "client_id": state["m2m_client_id"],
-        "client_secret": state["m2m_client_secret"], "resource": RESOURCE, "scope": "mcp:access"}
-status, token = request("POST", "/api/oidc/token", form, form=True)
-token = expect(status, token, 200, "Issue M2M access token")
-access_token = token.get("access_token", "")
-if access_token.count(".") != 2 or token.get("token_type", "").lower() != "bearer":
-    raise RuntimeError("Expected JWT bearer token")
-encoded = access_token.split(".")[1]
-claims = json.loads(base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4)))
-aud = claims.get("aud", [])
-if isinstance(aud, str):
-    aud = [aud]
-scopes = claims.get("scope", "")
-if claims.get("iss") != BASE or RESOURCE not in aud or "mcp:access" not in scopes.split():
-    raise RuntimeError("M2M JWT issuer, audience or scope mismatch")
-if not isinstance(claims.get("exp"), int) or claims["exp"] <= time.time():
-    raise RuntimeError("M2M JWT expired or has no expiry")
-status, _ = request("POST", "/api/oidc/token", {**form, "client_secret": "invalid-secret"}, form=True)
-if status not in (400, 401, 403):
-    raise RuntimeError("Invalid secret was not rejected: HTTP " + str(status))
-print("OIDC/JWKS, local human setup, M2M OAuth and wrong-secret denial: PASS")
+if is_aquifer:
+    verify_public_registration(client, state)
+    status, obj = request("GET", "/api/apis/" + state["api_id"], admin=True)
+    api = expect(status, obj, 200, "Read back Aquifer resource")
+    verify_resource(api, state["permission_id"])
+    status, obj = request("GET", "/api/apis/" + state["api_id"] + "/clients", admin=True)
+    grants = expect(status, obj, 200, "Read back Aquifer permissions")
+    verify_delegated_grant(grants, state["human_client_id"], state["permission_id"])
+    print("Aquifer public MCP grant and separate confidential Web callback verified")
+else:
+    # Authenticate against the real token endpoint and reject a wrong client secret.
+    form = {"grant_type": "client_credentials", "client_id": state["m2m_client_id"],
+            "client_secret": state["m2m_client_secret"], "resource": RESOURCE, "scope": SCOPE}
+    status, token = request("POST", "/api/oidc/token", form, form=True)
+    token = expect(status, token, 200, "Issue M2M access token")
+    access_token = token.get("access_token", "")
+    if access_token.count(".") != 2 or token.get("token_type", "").lower() != "bearer":
+        raise RuntimeError("Expected JWT bearer token")
+    encoded = access_token.split(".")[1]
+    claims = json.loads(base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4)))
+    aud = claims.get("aud", [])
+    if isinstance(aud, str):
+        aud = [aud]
+    scopes = claims.get("scope", "")
+    if claims.get("iss") != BASE or RESOURCE not in aud or "mcp:access" not in scopes.split():
+        raise RuntimeError("M2M JWT issuer, audience or scope mismatch")
+    if not isinstance(claims.get("exp"), int) or claims["exp"] <= time.time():
+        raise RuntimeError("M2M JWT expired or has no expiry")
+    invalid = {**form, "client_secret": "invalid-secret"}
+    status, _ = request("POST", "/api/oidc/token", invalid, form=True)
+    if status not in (400, 401, 403):
+        raise RuntimeError("Invalid secret was not rejected: HTTP " + str(status))
+    print("OIDC/JWKS, local human setup, M2M OAuth and wrong-secret denial: PASS")
 print("Public PKCE client_id:", state["human_client_id"])
 print("MCP resource:", RESOURCE)
 print("Local OAuth credentials:", STATE.name)
